@@ -9,10 +9,13 @@
 #include <chrono>
 #include <thread>
 #include <QKeyEvent>
+#include <random>
 
+//MainWindow *t = NULL;
 
 int main(int argc, char *argv[])
 {
+    srand(0xFF2B00FF);
     QApplication a(argc, argv);
     MainWindow o(0,0,600,400);
     QGraphicsView scene(&o);
@@ -26,12 +29,24 @@ int main(int argc, char *argv[])
     QGraphicsRectItem h(QRect(400,0,50,50)); h.setPen(QColor(0,0,0,0)); h.setBrush(QImage(QString("inv2.png")));
     o.addItem(&h);
 #endif
+    o.constants.width=600;
+    o.constants.height=400;
     _Draw* draw = new _Draw(&o);
     QThread* b = new QThread;
     draw->moveToThread(b);
     a.connect(b,SIGNAL(started()),draw,SLOT(Draw()));
     b->start();
     a.connect(draw,SIGNAL(stopped()),&o,SLOT(Draw()));
+    Menu* menu = new Menu(&o);
+    _Logick* log = new _Logick(&o, menu);
+    QThread* c = new QThread;
+    log->moveToThread(c);
+    a.connect(b,SIGNAL(started()),log,SLOT(Draw()));
+    a.connect(log,SIGNAL(MoveItem(QGraphicsRectItem*, int, int)),&o,SLOT(MoveItem(QGraphicsRectItem*, int, int)));
+    c->start();
+    log->statuses.named.inInventory=true;
+    //t=&o;
+
 
     /*while(true) {
         if(KeysPressed.Up()) h.setRect(h.rect().x(),h.rect().y()-50,50,50);
@@ -45,3 +60,11 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
+
+//void KeyPressEvent(QKeyEvent* event) {
+//    t->keyPressEvent(event);
+//}
+
+//void KeyReleaseEvent(QKeyEvent* event) {
+//    t->keyReleaseEvent(event);
+//}

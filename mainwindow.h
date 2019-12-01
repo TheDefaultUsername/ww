@@ -56,14 +56,22 @@ public:
     int Esc;
 };
 
-class Worm {};
+class Worm {
+public:
+    Worm();
+    qreal angle;
+    QRect pos;
+    qreal velocityX;
+    qreal velocityY;
+    QGraphicsRectItem* pointer;
+};
 
 class Inventory{};
 
 class Player {
 public:
-    Player() {}
-private:
+    Player();
+public:
     QVector<Worm*> Worms;
     int  currentWorm;
     QVector<int> Inventory;
@@ -81,9 +89,30 @@ public:
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override;
     void startGame(int playerAmount,int level, int gravity);
+    struct {
+        union {
+            QGraphicsItem* numbered[16];
+            struct {
+                QGraphicsRectItem* Inventory;
+                QGraphicsRectItem* Highlight;
+            } named;
+        } Item;
+    } Items;
 public slots:
     void Draw();
-private:
+    void MoveItem(QGraphicsRectItem* Item, int moveX, int moveY);
+    void AddItem(QRect Rect, QPen Pen, QBrush Brush);
+    void RemoveItem(QGraphicsItem* Item);
+public:
+    struct {
+        int gravity;
+        int playersCount;
+        int width;
+        int height;
+        int FPS;
+    } constants;
+    int currentPlayer;
+    int currentStep;
     _Keys Keys;
     _KeysPressed KeysPressed;
     QVector<int> currentLevel;
@@ -100,4 +129,55 @@ public slots:
 signals:
     void stopped();
 };
+
+class Menu: public QObject {
+    Q_OBJECT
+public:
+    Menu(MainWindow* m): main(m) {}
+    int current_action;
+    int current_menu;
+    void MoveUp();
+    void MoveDown();
+    void MoveLeft();
+    void MoveRight();
+    void accept();
+    QVector<int> gravityVariables;
+    QVector<long int> resizeTemplates;
+    QVector<int> level;
+    bool isLevelSand;
+    MainWindow* main;
+};
+
+class _Logick: public QObject {
+    Q_OBJECT
+public:
+    MainWindow* main;
+    Menu* menu;
+    _Logick(MainWindow* m, Menu* mm): main(m), menu(mm) {}
+public slots:
+    void Draw();
+signals:
+    void MoveItem(QGraphicsRectItem* Item, int moveX, int moveY);
+    void AddItem(QRect Rect, QPen Pen, QBrush Brush);
+    void RemoveItem(QGraphicsItem* Item);
+public:
+    union {
+        bool numbered[5];
+        struct {
+            bool inInventory;
+            bool inMenu;
+            bool shooting;
+        } named;
+    } statuses;
+};
+
+class _Physic: public QObject {
+    Q_OBJECT
+public:
+    MainWindow* main;
+    _Physic(MainWindow* m): main(m) {}
+public slots:
+    void Draw();
+};
+
 #endif // MAINWINDOW_H
