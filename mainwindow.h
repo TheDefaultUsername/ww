@@ -56,21 +56,36 @@ public:
     int Esc;
 };
 
+class Weapon {
+public:
+    bool isSpecific;
+    qreal velocityX;
+    qreal velocityY;
+    bool isBanana;
+    bool bananed;
+    int damage;
+    int radius;
+    int specID;
+    QVector<Weapon*> bananaChilds;
+    Weapon(bool iss, bool isb, qreal velX, qreal velY, int dam, int rad, int spid): isSpecific(iss), velocityX(velX), velocityY(velY), isBanana(isb), damage(dam), radius(rad), specID(spid) {}
+};
+
 class Worm {
 public:
-    Worm();
+    Worm(int);
     qreal angle;
     QRect pos;
     qreal velocityX;
     qreal velocityY;
     QGraphicsRectItem* pointer;
+    int hp;
 };
 
 class Inventory{};
 
 class Player {
 public:
-    Player();
+    Player(int);
 public:
     QVector<Worm*> Worms;
     int  currentWorm;
@@ -82,8 +97,8 @@ class MainWindow : public QGraphicsScene
     Q_OBJECT
 
 public:
-    MainWindow(QObject *parent = nullptr) : QGraphicsScene(parent) {}
-    MainWindow(qreal ax, qreal ay, qreal wid, qreal hig) : QGraphicsScene(ax,ay,wid,hig) {}
+    MainWindow(QObject *parent = nullptr) : QGraphicsScene(parent), launched(NULL) {}
+    MainWindow(qreal ax, qreal ay, qreal wid, qreal hig) : QGraphicsScene(ax,ay,wid,hig), launched(NULL) {}
     ~MainWindow() override;
 
     void keyPressEvent(QKeyEvent *event) override;
@@ -117,6 +132,7 @@ public:
     _KeysPressed KeysPressed;
     QVector<int> currentLevel;
     QVector<Player*> Players;
+    Weapon* launched;
 };
 
 class _Draw: public QObject {
@@ -178,6 +194,8 @@ public:
     _Physic(MainWindow* m): main(m) {}
 public slots:
     void Draw();
+signals:
+    void MoveItem(QGraphicsRectItem* Item, int moveX, int moveY);
 };
 
 #endif // MAINWINDOW_H

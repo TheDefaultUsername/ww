@@ -10,12 +10,14 @@
 #include <thread>
 #include <QKeyEvent>
 #include <random>
+#include <ctime>
 
 //MainWindow *t = NULL;
 
 int main(int argc, char *argv[])
 {
-    srand(0xFF2B00FF);
+    //srand(0xFF2B00FF);
+    srand(time(NULL));
     QApplication a(argc, argv);
     MainWindow o(0,0,600,400);
     QGraphicsView scene(&o);
@@ -31,6 +33,7 @@ int main(int argc, char *argv[])
 #endif
     o.constants.width=600;
     o.constants.height=400;
+    o.constants.FPS=60;
     _Draw* draw = new _Draw(&o);
     QThread* b = new QThread;
     draw->moveToThread(b);

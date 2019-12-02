@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 #include <QGraphicsItem>
+#include <ctime>
+#include <cmath>
 
 void MainWindow::keyPressEvent(QKeyEvent *event) {
     if (event->key()==Keys.Inventory) KeysPressed.sInventory(true);
@@ -31,6 +33,7 @@ void MainWindow::startGame(int playerAmount, int level, int gravity) {
     //this->clear();
     //this->setBackgroundBrush(QColor(128,192,255,255));
     ///currentLevel=Levels[level];
+    constants.playersCount=playerAmount;
     currentLevel=QVector<int>(600,100);
     for (int i = 0; i<currentLevel.size(); i++) {
         this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
@@ -38,11 +41,27 @@ void MainWindow::startGame(int playerAmount, int level, int gravity) {
     this->constants.gravity=gravity;
     Players.clear();
     for (int i = 0; i<playerAmount; i++) {
-        Players.push_back(new Player());
+        Players.push_back(new Player(constants.width));
         for (int j = 0; j<Players[i]->Worms.size(); j++) {
             this->addItem(Players[i]->Worms[j]->pointer);
+            //if leveltype==sand
+            MoveItem(Players[i]->Worms[j]->pointer,0,constants.height-currentLevel[Players[i]->Worms[i]->pointer->rect().x()]-50);
+            for (int k = 1; k<50; k++) {
+                if (currentLevel[Players[i]->Worms[i]->pointer->rect().x()+k]>currentLevel[Players[i]->Worms[i]->pointer->rect().x()+k-1]) {
+                    MoveItem(Players[i]->Worms[i]->pointer,0,constants.height-currentLevel[Players[i]->Worms[i]->pointer->rect().x()+k]-currentLevel[Players[i]->Worms[i]->pointer->rect().x()+k-1]);
+                }
+            }
         }
     }
+    QThread *b = new QThread;
+    _Physic* p = new _Physic(this);
+    p->moveToThread(b);
+    p->connect(b,SIGNAL(started()),p,SLOT(Draw()));
+    p->connect(p,SIGNAL(MoveItem(QGraphicsRectItem*, int, int)),this,SLOT(MoveItem(QGraphicsRectItem*, int, int)));
+    b->start();
+
+    //MoveItem(Items.Item.named.Highlight,5.3,0);
+
     //QGraphicsRectItem k(QRect(400,0,200,100));
     //k.setPen(QColor(0,0,0,0)); k.setBrush(QImage(QString("inv.png")));
     //this->addItem(&k);
@@ -195,14 +214,75 @@ void MainWindow::AddItem(QRect rect, QPen pen, QBrush brush) {
     //Players[1]->Worms[currentWorm].addWeapon()
 }
 
-Player::Player(): currentWorm(0), Inventory(20,0) {
+Player::Player(int w): currentWorm(0), Inventory(20,0) {
     for (int i = 0; i < 5; i++) {
-        Worms.push_back(new Worm());
+        Worms.push_back(new Worm(w));
     }
 }
 
-Worm::Worm(): angle(0), velocityX(0), velocityY(0) {
-    pos=QRect(rand()%600,0,50,50);
+Worm::Worm(int w): angle(0), velocityX(0), velocityY(0), hp(1000) {
+    pos=QRect(rand()%w,0,50,50);
     pointer = new QGraphicsRectItem(pos);
     //pointer->setPen(QPen(QColor(0,0,0,0)));
+}
+
+void _Physic::Draw() {
+    int FPS=main->constants.FPS;
+    while (true) {
+        time_t a = time(NULL);
+        //std::thread th([FPS](){std::this_thread::sleep_for(std::chrono::milliseconds(1000/FPS));});
+        //gravity
+        for(int i = 0; i<main->constants.playersCount; i++) {
+            for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
+                main->Players[i]->Worms[j]->velocityY+=((double)main->constants.gravity)/FPS;
+            }
+        }
+        if (main->launched) {
+            main->launched->velocityY+=((double)main->constants.gravity)/FPS;
+            if ((main->launched->isBanana)&&(main->launched->bananed)) {
+                for (int i = 0; i<main->launched->bananaChilds.size(); i++) {
+                    main->launched->bananaChilds[i]->velocityY+=((double)main->constants.gravity)/FPS;
+                }
+            }
+        }
+        //move
+        for(int i = 0; i<main->constants.playersCount; i++) {
+            for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
+                emit MoveItem(main->Players[i]->Worms[j]->pointer,main->Players[i]->Worms[j]->velocityX,main->Players[i]->Worms[j]->velocityY);
+                if (main->Players[i]->Worms[j]->pointer->rect().x()>main->constants.width-50) {
+                    main->Players[i]->Worms[j]->velocityX=0;
+                    emit MoveItem(main->Players[i]->Worms[j]->pointer,600 - 50 - main->Players[i]->Worms[j]->pointer->rect().x(),0);
+                }
+                if (main->Players[i]->Worms[j]->pointer->rect().x()<0) {
+                    main->Players[i]->Worms[j]->velocityX=0;
+                    emit MoveItem(main->Players[i]->Worms[j]->pointer,0-main->Players[i]->Worms[j]->pointer->rect().x(),0);
+                }
+                for (int k = 0; k<50; k++) {
+                    if (main->Players[i]->Worms[j]->pointer->rect().y()+50>main->constants.height - main->currentLevel[main->Players[i]->Worms[i]->pointer->rect().x()+k]) {
+                        emit MoveItem(main->Players[i]->Worms[i]->pointer,0,
+                                      main->constants.height//400
+                                      -main->currentLevel[trunc(main->Players[i]->Worms[i]->pointer->rect().x())+k]//400-200 = 200
+                                      -trunc(main->Players[i]->Worms[j]->pointer->rect().y())//200 - 150 = 50
+                                      -50); // 50 - 50 = 0
+                        ///main->Players[i]->Worms[j]->damaged(main->Players[i]->Worms[j]->velocityY);
+                        main->Players[i]->Worms[j]->velocityY=0;
+                    }
+                }
+            }
+        }
+        //todo : move
+        if (main->launched) {
+            main->launched->velocityY+=((double)main->constants.gravity)/FPS;
+            if ((main->launched->isBanana)&&(main->launched->bananed)) {
+                for (int i = 0; i<main->launched->bananaChilds.size(); i++) {
+                    main->launched->bananaChilds[i]->velocityY+=((double)main->constants.gravity)/FPS;
+                }
+            }
+        }
+        while (time(NULL) - a < 0.5) {}
+
+
+
+        //th.join();
+    }
 }
