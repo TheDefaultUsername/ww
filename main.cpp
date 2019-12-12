@@ -33,11 +33,12 @@ int main(int argc, char *argv[])
 #endif
     o.constants.width=600;
     o.constants.height=400;
-    o.constants.FPS=60;
+    o.constants.FPS=50;
     _Draw* draw = new _Draw(&o);
     QThread* b = new QThread;
     draw->moveToThread(b);
     a.connect(b,SIGNAL(started()),draw,SLOT(Draw()));
+    a.connect(draw,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
     b->start();
     a.connect(draw,SIGNAL(stopped()),&o,SLOT(Draw()));
     Menu* menu = new Menu(&o);
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
     QThread* c = new QThread;
     log->moveToThread(c);
     a.connect(b,SIGNAL(started()),log,SLOT(Draw()));
-    a.connect(log,SIGNAL(MoveItem(QGraphicsRectItem*, int, int)),&o,SLOT(MoveItem(QGraphicsRectItem*, int, int)));
+    a.connect(log,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
     c->start();
     log->statuses.named.inInventory=true;
     //t=&o;

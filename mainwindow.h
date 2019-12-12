@@ -1,6 +1,9 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#define JUMP_VELOCITY 10
+#define DEFAULT_GRAVITY 10
+
 #include <QGraphicsScene>
 #include <QKeyEvent>
 #include <QVector>
@@ -67,26 +70,49 @@ public:
     int radius;
     int specID;
     QVector<Weapon*> bananaChilds;
-    Weapon(bool iss, bool isb, qreal velX, qreal velY, int dam, int rad, int spid): isSpecific(iss), velocityX(velX), velocityY(velY), isBanana(isb), damage(dam), radius(rad), specID(spid) {}
+    QGraphicsPixmapItem *pointer;
+    Weapon(bool iss,
+           bool isb,
+           qreal velX,
+           qreal velY,
+           int dam,
+           int rad,
+           int spid) :
+        isSpecific(iss),
+        velocityX(velX),
+        velocityY(velY),
+        isBanana(isb),
+        damage(dam),
+        radius(rad),
+        specID(spid) {}
 };
 
 class Worm {
 public:
     Worm(int);
     qreal angle;
-    QRect pos;
     qreal velocityX;
     qreal velocityY;
-    QGraphicsRectItem* pointer;
+    QGraphicsPixmapItem* pointer;
     int hp;
+    void damaged(int);
 };
 
-class Inventory{};
+class Inventory{
+public:
+    Inventory();
+    QVector<QGraphicsPixmapItem*> WeapIm;
+};
 
 class Player {
 public:
     Player(int);
 public:
+    void showInventory();
+    void hideInventory();
+    bool moveInventoryUp();
+    bool moveInventoryDown();
+    bool getWeapon(int);
     QVector<Worm*> Worms;
     int  currentWorm;
     QVector<int> Inventory;
@@ -108,15 +134,16 @@ public:
         union {
             QGraphicsItem* numbered[16];
             struct {
-                QGraphicsRectItem* Inventory;
-                QGraphicsRectItem* Highlight;
+                QGraphicsPixmapItem* Inventory;
+                QGraphicsPixmapItem* Highlight;
             } named;
         } Item;
     } Items;
 public slots:
     void Draw();
-    void MoveItem(QGraphicsRectItem* Item, int moveX, int moveY);
-    void AddItem(QRect Rect, QPen Pen, QBrush Brush);
+    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void AddItem(QPixmap map, QPen Pen, QBrush Brush);
+    void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
 public:
     struct {
@@ -126,6 +153,7 @@ public:
         int height;
         int FPS;
     } constants;
+    int inventoryLayout;
     int currentPlayer;
     int currentStep;
     _Keys Keys;
@@ -133,6 +161,7 @@ public:
     QVector<int> currentLevel;
     QVector<Player*> Players;
     Weapon* launched;
+    QVector<QGraphicsPixmapItem*> Inventory;
 };
 
 class _Draw: public QObject {
@@ -143,6 +172,7 @@ public:
 public slots:
     void Draw();
 signals:
+    void AddItem(QGraphicsItem*);
     void stopped();
 };
 
@@ -173,8 +203,8 @@ public:
 public slots:
     void Draw();
 signals:
-    void MoveItem(QGraphicsRectItem* Item, int moveX, int moveY);
-    void AddItem(QRect Rect, QPen Pen, QBrush Brush);
+    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void AddItem(QPixmap map, QPen Pen, QBrush Brush);
     void RemoveItem(QGraphicsItem* Item);
 public:
     union {
@@ -195,7 +225,7 @@ public:
 public slots:
     void Draw();
 signals:
-    void MoveItem(QGraphicsRectItem* Item, int moveX, int moveY);
+    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
 };
 
 #endif // MAINWINDOW_H
