@@ -18,19 +18,26 @@ signals:
 class Menu: public QObject {
     Q_OBJECT
 public:
-    Menu(MainWindow* m): main(m) {}
+    Menu(MainWindow* m);
     int current_action;
     int current_menu;
     void MoveUp();
     void MoveDown();
-    void MoveLeft();
-    void MoveRight();
-    void accept();
+    void show();
+    void hide();
+    bool accept();
     QVector<int> gravityVariables;
     QVector<long int> resizeTemplates;
     QVector<int> level;
     bool isLevelSand;
+    int playeramount;
+    int gravity;
     MainWindow* main;
+    QVector<QGraphicsPixmapItem*> buttons;
+    QVector<QGraphicsTextItem*> texts;
+signals:
+    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void SetPlainText(QGraphicsTextItem* a,QString b);
 };
 
 class _Logick: public QObject {
@@ -38,7 +45,7 @@ class _Logick: public QObject {
 public:
     MainWindow* main;
     Menu* menu;
-    _Logick(MainWindow* m, Menu* mm): main(m), menu(mm) {}
+    _Logick(MainWindow* m, Menu* mm): main(m), menu(mm), statuses({false,false,false,false,false}) {}
 public slots:
     void Draw();
 signals:

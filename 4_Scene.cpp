@@ -18,7 +18,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     if (event->key()==Keys.Up) KeysPressed.sUp(true);
     if (event->key()==Keys.Down) KeysPressed.sDown(true);
     if (event->key()==Keys.Jump) KeysPressed.sJump(true);
-    if (event->key()==Keys.Use) KeysPressed.sUse(true);
+    if ((event->key()==Keys.Use)||(event->key()==Qt::Key_Enter)) KeysPressed.sUse(true);
     if (event->key()==Keys.Esc) KeysPressed.sEsc(true);
 
     //qDebug()<<event->key()<<" "<<event->nativeVirtualKey()<<" "<<Keys.Use;
@@ -89,7 +89,7 @@ void MainWindow::Draw() {
     QPixmap pm(200,100);
     pm.fill(Qt::transparent);
     QPainter p(&pm);
-    p.setBrush(QImage(QString("inv.png")));
+    p.setBrush(QImage(QString("src/inv.png")));
     p.setPen(Qt::transparent);
     p.drawRect(QRectF(0,0,200,100));
     p.end();
@@ -99,7 +99,7 @@ void MainWindow::Draw() {
     QPixmap pm2(50,50);
     pm2.fill(Qt::transparent);
     QPainter p2(&pm2);
-    p2.setBrush(QImage(QString("inv2.png")));
+    p2.setBrush(QImage(QString("src/inv2.png")));
     p2.setPen(Qt::transparent);
     p2.drawRect(QRectF(0,0,50,50));
     p2.end();
@@ -110,6 +110,8 @@ void MainWindow::Draw() {
     //QGraphicsScene::addRect(0,0,50,50);
     Item.named.Inventory=k;
     Item.named.Highlight=h;
+    k->hide();
+    h->hide();
     startGame(1,0,10);
     //std::this_thread::sleep_for(std::chrono::seconds(5));
     //MoveItem(h,50,0);*/

@@ -31,6 +31,7 @@ public slots:
     void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
     void SetLine(qreal,qreal,qreal,qreal);
+    void SetPlainText(QGraphicsTextItem* a,QString b) {a->setPlainText(b);}
 public:
     struct {
         int gravity;

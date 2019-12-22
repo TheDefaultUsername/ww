@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
     _Load* load = new _Load(&o);
     QThread* loadThread = new QThread;
     load->moveToThread(loadThread);
-    a.connect(loadThread,SIGNAL(started()),load,SLOT(Load()));
-    a.connect(load,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
-	a.connect(load,SIGNAL(stopped()),&o,SLOT(Draw()));
+        a.connect(loadThread,SIGNAL(started()),load,SLOT(Load()));
+        a.connect(load,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
+        a.connect(load,SIGNAL(stopped()),&o,SLOT(Draw()));
     loadThread->start();
     
 	
@@ -37,12 +37,16 @@ int main(int argc, char *argv[])
     Menu* menu = new Menu(&o);
     _Logick* logick = new _Logick(&o, menu);
     QThread* logickThread = new QThread;
-    logick->moveToThread(loadThread);
-    a.connect(loadThread,SIGNAL(started()),logick,SLOT(Draw()));
-    a.connect(logick,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
-    a.connect(logick,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
-    a.connect(logick,SIGNAL(SetLine(qreal,qreal,qreal,qreal)),&o,SLOT(SetLine(qreal,qreal,qreal,qreal)));
+    logick->moveToThread(logickThread);
+        a.connect(logickThread,SIGNAL(started()),logick,SLOT(Draw()));
+        a.connect(logick,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
+        a.connect(menu,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
+        a.connect(logick,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
+        a.connect(logick,SIGNAL(SetLine(qreal,qreal,qreal,qreal)),&o,SLOT(SetLine(qreal,qreal,qreal,qreal)));
+        a.connect(menu,SIGNAL(SetPlainText(QGraphicsTextItem*,QString)),&o,SLOT(SetPlainText(QGraphicsTextItem*,QString)));
     logickThread->start();
+
+    menu->show();
     logick->statuses.named.inMenu=true;
 
     return a.exec();

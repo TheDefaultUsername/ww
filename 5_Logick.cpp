@@ -3,6 +3,9 @@
 #include <chrono>
 #include <cmath>
 
+
+#include <QDebug>
+
 #define JUMP_VELOCITY 10
 #define DEFAULT_GRAVITY 10
 
@@ -21,10 +24,11 @@ void _Load::Load() {
     w=w<<2;
     main->Inventory.clear();
     for (int i = 0; i<w; i++) {
-        QGraphicsPixmapItem *n = new QGraphicsPixmapItem(QPixmap(QString("%1.png").arg(i)).scaled(QSize(50,50),Qt::KeepAspectRatio));
+        QGraphicsPixmapItem *n = new QGraphicsPixmapItem(QPixmap(QString("src/%1.png").arg(i)).scaled(QSize(50,50),Qt::KeepAspectRatio));
         n->setPos(QPointF((i%4)*50+main->constants.width-200,(i > 3 ? 50 : 0)));
         main->Inventory.push_back(n);
         emit AddItem(n);
+        n->hide();
     }
     main->Keys.Right=Qt::Key_Right;
     main->Keys.Left=Qt::Key_Left;
@@ -40,6 +44,7 @@ void _Load::Load() {
 void _Logick::Draw() {
     bool invMove = true;
     while(true) {
+        //qDebug()<<"statuses"<<statuses.named.inMenu<<statuses.named.shooting<<statuses.named.inInventory;
         if (statuses.named.inInventory) {
             if (main->KeysPressed.Right()) {
                 if (main->Item.named.Highlight->pos().x()+50<main->constants.width) {
@@ -117,7 +122,21 @@ void _Logick::Draw() {
             }
         continue;}
         if (statuses.named.inMenu) {
-
+            if (main->KeysPressed.Up()&&invMove) {
+                menu->MoveUp();
+                invMove=false;
+                std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
+            }
+            if (main->KeysPressed.Down()&&invMove) {
+                menu->MoveDown();
+                invMove=false;
+                std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
+            }
+            if (main->KeysPressed.Use()&&invMove) {
+                if(menu->accept()) statuses.named.inMenu=false;
+                invMove=false;
+                std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
+            }
         continue;}
         if (statuses.named.shooting) {
             if (main->KeysPressed.Up()&&invMove) {
@@ -214,6 +233,10 @@ void _Logick::Draw() {
                     *velY = -main->constants.gravity/2;
                 }
                 //*velY = (1 > abs(*velY) ? -5 : *velY);
+            }
+            if (main->KeysPressed.Esc()) {
+                menu->show();
+                statuses.named.inMenu=true;
             }
         }
     }
@@ -325,3 +348,68 @@ void _Physic::Draw() {
     }
 }
 
+void Menu::MoveUp() {
+    //qDebug()<<"su";
+    if (!current_action) return;
+    current_action--;
+    //qDebug()<<"u";
+    emit MoveItem(buttons[5],0,-55);
+}
+void Menu::MoveDown() {
+    //qDebug()<<"sd";
+    //play
+    //gravity
+    //playeramount
+    //level
+    if (current_action==4) return;
+    current_action++;
+    //qDebug()<<"d";
+    emit MoveItem(buttons[5],0,55);
+}
+void Menu::show() {
+    for (int i = 0; i<5; i++) {
+        texts[i]->show();
+        buttons[i]->show();
+    }
+    buttons[5]->show();
+}
+void Menu::hide() {
+    for (int i = 0; i<5; i++) {
+        texts[i]->hide();
+        buttons[i]->hide();
+    }
+    buttons[5]->hide();
+}
+bool Menu::accept() {
+    if (current_action==4) exit(0);
+    if (current_action==2) {
+        if ((gravity>0)&&(gravity<100)) {gravity++;} else {gravity=1;}
+        emit SetPlainText(texts[2],QString("Gravity %1").arg(gravity));
+    }
+    if (current_action==3) {
+        if ((playeramount>1)&&(playeramount<5)) {playeramount++;} else {playeramount=2;}
+        emit SetPlainText(texts[3],QString("Players %1").arg(playeramount));
+    }
+    return false;
+}
+
+Menu::Menu(MainWindow* m): main(m) {
+    texts.append(new QGraphicsTextItem(QString("Start Game")));
+    texts.append(new QGraphicsTextItem(QString("Level")));
+    texts.append(new QGraphicsTextItem(QString("Gravity")));
+    texts.append(new QGraphicsTextItem(QString("Players")));
+    texts.append(new QGraphicsTextItem(QString("Exit")));
+
+    for (int i = 0; i<5; i++) {
+        buttons.append(new QGraphicsPixmapItem(QPixmap(QString("src/but.png")).scaled(QSize(200,50))));
+        buttons[i]->setPos(200,i*55);
+        texts[i]->setPos(200,i*55);
+        texts[i]->setFont(QFont(QFont().defaultFamily(),30));
+        main->addItem(texts[i]);
+        main->addItem(buttons[i]);
+    }
+    buttons.append(new QGraphicsPixmapItem(QPixmap(QString("src/inv4.png")).scaled(QSize(200,50))));
+    buttons[5]->setPos(200,0);
+    main->addItem(buttons[5]);
+    current_action=0;
+}
