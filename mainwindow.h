@@ -59,6 +59,17 @@ public:
     int Esc;
 };
 
+class Worm {
+public:
+    Worm(int);
+    qreal angle;
+    qreal velocityX;
+    qreal velocityY;
+    QGraphicsPixmapItem* pointer;
+    int hp;
+    void damaged(int);
+};
+
 class Weapon {
 public:
     bool isSpecific;
@@ -84,18 +95,9 @@ public:
         isBanana(isb),
         damage(dam),
         radius(rad),
-        specID(spid) {}
-};
-
-class Worm {
-public:
-    Worm(int);
-    qreal angle;
-    qreal velocityX;
-    qreal velocityY;
-    QGraphicsPixmapItem* pointer;
-    int hp;
-    void damaged(int);
+        specID(spid),
+        pointer(NULL) {}
+    QGraphicsItem* detonate();
 };
 
 class Inventory{
@@ -124,7 +126,7 @@ class MainWindow : public QGraphicsScene
 
 public:
     MainWindow(QObject *parent = nullptr) : QGraphicsScene(parent), launched(NULL) {}
-    MainWindow(qreal ax, qreal ay, qreal wid, qreal hig) : QGraphicsScene(ax,ay,wid,hig), launched(NULL) {}
+    MainWindow(qreal ax, qreal ay, qreal wid, qreal hig) : QGraphicsScene(ax,ay,wid,hig), launched(NULL), Items({0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}) {}
     ~MainWindow() override;
 
     void keyPressEvent(QKeyEvent *event) override;
@@ -136,6 +138,7 @@ public:
             struct {
                 QGraphicsPixmapItem* Inventory;
                 QGraphicsPixmapItem* Highlight;
+                QGraphicsLineItem* Scope;
             } named;
         } Item;
     } Items;
@@ -145,6 +148,7 @@ public slots:
     void AddItem(QPixmap map, QPen Pen, QBrush Brush);
     void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
+    void SetLine(qreal,qreal,qreal,qreal);
 public:
     struct {
         int gravity;
@@ -205,7 +209,9 @@ public slots:
 signals:
     void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
     void AddItem(QPixmap map, QPen Pen, QBrush Brush);
+    void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
+    void SetLine(qreal,qreal,qreal,qreal);
 public:
     union {
         bool numbered[5];
@@ -226,6 +232,8 @@ public slots:
     void Draw();
 signals:
     void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void RemoveItem(QGraphicsItem* Item);
+    void AddItem(QGraphicsItem*);
 };
 
 #endif // MAINWINDOW_H

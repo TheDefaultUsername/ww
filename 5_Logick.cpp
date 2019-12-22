@@ -1,79 +1,12 @@
-#include "mainwindow.h"
-#include <QGraphicsItem>
-#include <ctime>
+#include "5_Logick.h"
+#include <thread>
+#include <chrono>
 #include <cmath>
-#include <QDebug>
-#include <QPainter>
 
-void MainWindow::keyPressEvent(QKeyEvent *event) {
-    if (event->nativeVirtualKey()==Keys.Inventory) KeysPressed.sInventory(true);
-    if (event->key()==Keys.Right) KeysPressed.sRight(true);
-    if (event->key()==Keys.Left) KeysPressed.sLeft(true);
-    if (event->key()==Keys.Up) KeysPressed.sUp(true);
-    if (event->key()==Keys.Down) KeysPressed.sDown(true);
-    if (event->key()==Keys.Jump) KeysPressed.sJump(true);
-    if (event->key()==Keys.Use) KeysPressed.sUse(true);
-    if (event->key()==Keys.Esc) KeysPressed.sEsc(true);
+#define JUMP_VELOCITY 10
+#define DEFAULT_GRAVITY 10
 
-    //qDebug()<<event->key()<<" "<<event->nativeVirtualKey()<<" "<<Keys.Use;
-}
-
-void MainWindow::keyReleaseEvent(QKeyEvent *event) {
-    if (event->nativeVirtualKey()==Keys.Inventory) KeysPressed.sInventory(false);
-    if (event->key()==Keys.Right) KeysPressed.sRight(false);
-    if (event->key()==Keys.Left) KeysPressed.sLeft(false);
-    if (event->key()==Keys.Up) KeysPressed.sUp(false);
-    if (event->key()==Keys.Down) KeysPressed.sDown(false);
-    if (event->key()==Keys.Jump) KeysPressed.sJump(false);
-    if (event->key()==Keys.Use) KeysPressed.sUse(false);
-    if (event->key()==Keys.Esc) KeysPressed.sEsc(false);
-}
-
-MainWindow::~MainWindow()
-{
-}
-
-void MainWindow::startGame(int playerAmount, int level, int gravity) {
-    //this->clear();
-    //this->setBackgroundBrush(QColor(128,192,255,255));
-    inventoryLayout=0;
-    ///currentLevel=Levels[level];
-    constants.playersCount=playerAmount;
-    currentLevel=QVector<int>(600,100);
-    for (int i = 0; i<currentLevel.size(); i++) {
-        this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
-    }
-    this->constants.gravity=gravity;
-    Players.clear();
-    for (int i = 0; i<playerAmount; i++) {
-        Players.push_back(new Player(constants.width));
-        for (int j = 0; j<Players[i]->Worms.size(); j++) {
-            this->addItem(Players[i]->Worms[j]->pointer);
-            //if leveltype==sand
-            auto it = currentLevel.begin()+(int)trunc(Players[i]->Worms[i]->pointer->pos().x());
-            auto ite = it + Players[i]->Worms[i]->pointer->pixmap().width();
-            MoveItem(Players[i]->Worms[j]->pointer,0,constants.height-*(std::max_element(it,ite))-Players[i]->Worms[i]->pointer->pixmap().height());
-        }
-    }
-    currentPlayer=0;
-    currentStep=0;
-    QThread *b = new QThread;
-    _Physic* p = new _Physic(this);
-    p->moveToThread(b);
-    p->connect(b,SIGNAL(started()),p,SLOT(Draw()));
-    p->connect(p,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),this,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
-    p->connect(p,SIGNAL(AddItem(QGraphicsItem*)),this,SLOT(AddItem(QGraphicsItem*)));
-    p->connect(p,SIGNAL(RemoveItem(QGraphicsItem*)),this,SLOT(RemoveItem(QGraphicsItem*)));
-    b->start();
-
-    //MoveItem(Items.Item.named.Highlight,5.3,0);
-
-    //QGraphicsRectItem k(QRect(400,0,200,100));
-    //k.setPen(QColor(0,0,0,0)); k.setBrush(QImage(QString("inv.png")));
-    //this->addItem(&k);
-}
-
-void _Draw::Draw() {
+void _Load::Load() {
     ///std::this_thread::sleep_for(std::chrono::seconds(5));
     //((QGraphicsRectItem*)(main->items()[0]))->setRect(QRect(0,0,200,100));
     /*std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -104,68 +37,32 @@ void _Draw::Draw() {
     emit stopped();
 }
 
-void MainWindow::Draw() {
-    this->setBackgroundBrush(QColor(128,192,255,255));
-    currentLevel=QVector<int>(600,100);
-    for (int i = 0; i<currentLevel.size(); i++) {
-        this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
-    }
-    //this->addRect(QRect(0,250,600,50),QPen(Qt::transparent),QBrush(Qt::blue));
-    QPixmap pm(200,100);
-    pm.fill(Qt::transparent);
-    QPainter p(&pm);
-    p.setBrush(QImage(QString("inv.png")));
-    p.setPen(Qt::transparent);
-    p.drawRect(QRectF(0,0,200,100));
-    p.end();
-    QGraphicsPixmapItem* k = new QGraphicsPixmapItem(pm);
-    k->setPos(400,0);
-    this->addItem(k);
-    QPixmap pm2(50,50);
-    pm2.fill(Qt::transparent);
-    QPainter p2(&pm2);
-    p2.setBrush(QImage(QString("inv2.png")));
-    p2.setPen(Qt::transparent);
-    p2.drawRect(QRectF(0,0,50,50));
-    p2.end();
-    QGraphicsPixmapItem* h = new QGraphicsPixmapItem(pm2);
-    h->setPos(400,0);
-    //h->setPen(QColor(0,0,0,0)); h->setBrush(QImage(QString("inv2.png")));
-    this->addItem(h);
-    //QGraphicsScene::addRect(0,0,50,50);
-    Items.Item.named.Inventory=k;
-    Items.Item.named.Highlight=h;
-    startGame(1,0,10);
-    //std::this_thread::sleep_for(std::chrono::seconds(5));
-    //MoveItem(h,50,0);*/
-}
-
 void _Logick::Draw() {
     bool invMove = true;
     while(true) {
         if (statuses.named.inInventory) {
             if (main->KeysPressed.Right()) {
-                if (main->Items.Item.named.Highlight->pos().x()+50<main->constants.width) {
+                if (main->Item.named.Highlight->pos().x()+50<main->constants.width) {
                     if (invMove) {
-                        emit MoveItem(main->Items.Item.named.Highlight,50,0);
+                        emit MoveItem(main->Item.named.Highlight,50,0);
                         invMove=false;
                         std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); invMove=true;}).detach();
                     }
                 }
             }
             if (main->KeysPressed.Left()) {
-                if (main->Items.Item.named.Highlight->pos().x()>main->constants.width-200) {
+                if (main->Item.named.Highlight->pos().x()>main->constants.width-200) {
                     if (invMove) {
-                        emit MoveItem(main->Items.Item.named.Highlight,-50,0);
+                        emit MoveItem(main->Item.named.Highlight,-50,0);
                         invMove=false;
                         std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); invMove=true;}).detach();
                     }
                 }
             }
             if (main->KeysPressed.Down()) {
-                if (main->Items.Item.named.Highlight->pos().y()==0) {
+                if (main->Item.named.Highlight->pos().y()==0) {
                     if (invMove) {
-                        emit MoveItem(main->Items.Item.named.Highlight,0,50);
+                        emit MoveItem(main->Item.named.Highlight,0,50);
                         invMove=false;
                         std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); invMove=true;}).detach();
                     }
@@ -181,9 +78,9 @@ void _Logick::Draw() {
                 }
             }
             if (main->KeysPressed.Up()) {
-                if (main->Items.Item.named.Highlight->pos().y()==50) {
+                if (main->Item.named.Highlight->pos().y()==50) {
                     if (invMove) {
-                        emit MoveItem(main->Items.Item.named.Highlight,0,-50);
+                        emit MoveItem(main->Item.named.Highlight,0,-50);
                         invMove=false;
                         std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); invMove=true;}).detach();
                     }
@@ -200,8 +97,8 @@ void _Logick::Draw() {
             }
             if (main->KeysPressed.Inventory()||main->KeysPressed.Esc()) {
                 if (invMove) {
-                    main->Items.Item.named.Highlight->hide();
-                    main->Items.Item.named.Inventory->hide();
+                    main->Item.named.Highlight->hide();
+                    main->Item.named.Inventory->hide();
                     main->Players[main->currentPlayer]->hideInventory();
                     invMove=false;
                     std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
@@ -210,10 +107,10 @@ void _Logick::Draw() {
             }
             if (main->KeysPressed.Use()) {
                 statuses.named.inInventory=false;
-                main->Items.Item.named.Highlight->hide();
-                main->Items.Item.named.Inventory->hide();
-                int num = (main->Items.Item.named.Highlight->pos().y()*4+(200-(main->constants.width - main->Items.Item.named.Highlight->pos().x())))/50;
-                if (invMove) if (main->Players[main->currentPlayer]->getWeapon(num)) {statuses.named.shooting=true; emit AddItem(main->Items.Item.named.Scope);}
+                main->Item.named.Highlight->hide();
+                main->Item.named.Inventory->hide();
+                int num = (main->Item.named.Highlight->pos().y()*4+(200-(main->constants.width - main->Item.named.Highlight->pos().x())))/50;
+                if (invMove) if (main->Players[main->currentPlayer]->getWeapon(num)) {statuses.named.shooting=true; emit AddItem(main->Item.named.Scope);}
                 invMove=false;
                 std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
                 main->Players[main->currentPlayer]->hideInventory();
@@ -277,8 +174,8 @@ void _Logick::Draw() {
             if (main->KeysPressed.Inventory()) {
                 if (invMove) {
                     statuses.named.inInventory=true;
-                    main->Items.Item.named.Highlight->show();
-                    main->Items.Item.named.Inventory->show();
+                    main->Item.named.Highlight->show();
+                    main->Item.named.Inventory->show();
                     main->Players[main->currentPlayer]->showInventory();
                     invMove=false;
                     std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
@@ -320,60 +217,6 @@ void _Logick::Draw() {
             }
         }
     }
-}
-
-void MainWindow::MoveItem(QGraphicsPixmapItem* item, int mX, int mY) {
-    if (mX>0) {
-    item->setPos(std::min(item->pos().x()+mX,(double)(constants.width-item->pixmap().width())),
-                  item->pos().y()+mY
-                  );
-    } else {
-        item->setPos(std::max(item->pos().x()+mX,(double)0),
-                      item->pos().y()+mY
-                      );
-    }
-    //qDebug() << "Item new rect: " << item->rect();*/
-}
-
-void MainWindow::RemoveItem(QGraphicsItem *item) {
-    this->RemoveItem(item);
-    //delete(item);
-}
-
-void MainWindow::AddItem(QPixmap map, QPen pen, QBrush brush) {
-    QPainter p(&map);
-    p.setPen(pen);
-    p.setBrush(brush);
-    p.drawRect(0,0,map.width(),map.height());
-    p.end();
-    QGraphicsPixmapItem* k = new QGraphicsPixmapItem(map);
-    //k->setPen(pen); k->setBrush(brush);
-    //launched=k;
-}
-
-Player::Player(int w): currentWorm(0), Inventory(20,0) {
-    for (int i = 0; i < 6; i++) {
-        Worms.push_back(new Worm(w));
-    }
-    Inventory[0]=1;
-}
-
-Worm::Worm(int w): angle(0), velocityX(0), velocityY(0), hp(1000) {
-    QPoint pos = QPoint(rand()%(w-50),0);
-    //QPixmap pm(50,50);
-    //pm.fill(Qt::transparent);
-    //QPainter p(&pm);
-    //p.setPen(Qt::transparent);
-    //p.setBrush(QBrush(QImage(QString("wm.png"))));
-    //p.drawRect(QRectF(0,0,50,50));
-    //p.end();
-    pointer = new QGraphicsPixmapItem(QPixmap(QString("wm.png")).scaled(QSize(50,50),Qt::KeepAspectRatio));
-    pointer->setPos(pos);
-    //QRect(rand()%(w-50),0,50,50);
-    //pointer = new QGraphicsPixmapItem(pos);
-    //pointer->setBrush(QBrush(QPixmap(QString("wm.png")).scaled(QSize(50,50),Qt::KeepAspectRatio)));
-
-    //pointer->setPen(QPen(QColor(0,0,0,0)));*/
 }
 
 void _Physic::Draw() {
@@ -482,127 +325,3 @@ void _Physic::Draw() {
     }
 }
 
-void Player::showInventory() {
-    if (Worms.empty()) return;
-    QGraphicsScene* scene = Worms.front()->pointer->scene();
-    if (!scene) return;
-    QVector<QGraphicsPixmapItem*> *pointers = &((MainWindow*)scene)->Inventory;
-    int *inventoryLayout=&((MainWindow*)scene)->inventoryLayout;
-    for (int i = 0; i< 8; i++) {
-        pointers->at(*inventoryLayout+i)->show();
-    }
-}
-void Player::hideInventory() {
-    if (Worms.empty()) return;
-    QGraphicsScene* scene = Worms.front()->pointer->scene();
-    if (!scene) return;
-    QVector<QGraphicsPixmapItem*> *pointers = &((MainWindow*)scene)->Inventory;
-    int *inventoryLayout=&((MainWindow*)scene)->inventoryLayout;
-    for (int i = 0; i< 8; i++) {
-        pointers->at(*inventoryLayout+i)->hide();
-    }
-}
-bool Player::moveInventoryUp() {
-    if (Worms.empty()) return false;
-    QGraphicsScene* scene = Worms.front()->pointer->scene();
-    if (!scene) return false;
-    QVector<QGraphicsPixmapItem*> *pointers = &((MainWindow*)scene)->Inventory;
-    int *inventoryLayout=&((MainWindow*)scene)->inventoryLayout;
-    if (*inventoryLayout==0) return false;
-    for (int i = 0; i< 4; i++) {
-        pointers->at(*inventoryLayout+4+i)->hide();
-    }
-    (*inventoryLayout)-=4;
-    for (int i = 0; i< 4; i++) {
-        pointers->at(*inventoryLayout+i)->show();
-    }
-    return true;
-}
-bool Player::moveInventoryDown() {
-    if (Worms.empty()) return false;
-    QGraphicsScene* scene = Worms.front()->pointer->scene();
-    if (!scene) return false;
-    QVector<QGraphicsPixmapItem*> *pointers = &((MainWindow*)scene)->Inventory;
-    int *inventoryLayout=&((MainWindow*)scene)->inventoryLayout;
-    if (pointers->size()==*inventoryLayout+8) return false;
-    for (int i = 0; i< 4; i++) {
-        pointers->at(*inventoryLayout+i)->hide();
-    }
-    (*inventoryLayout)+=4;
-    for (int i = 0; i< 4; i++) {
-        pointers->at(*inventoryLayout+4+i)->show();
-    }
-    return true;
-}
-bool Player::getWeapon(int a) {
-    if (Worms.empty()) return false;
-    MainWindow* scene = (MainWindow*)Worms.front()->pointer->scene();
-    if (!scene) return false;
-    int *inventoryLayout=&(scene->inventoryLayout);
-    if (Inventory[*inventoryLayout+a]>0) {
-        Inventory[*inventoryLayout+a]-=1;
-        currentWorm=*inventoryLayout + a;
-        scene->Items.Item.named.Scope=new QGraphicsLineItem(
-                    Worms[scene->currentStep%Worms.size()]->pointer->pos().x()+25,
-                    Worms[scene->currentStep%Worms.size()]->pointer->pos().y()+25,
-                    Worms[scene->currentStep%Worms.size()]->pointer->pos().x()+25 - 50*sin(Worms[scene->currentStep%Worms.size()]->angle),
-                    Worms[scene->currentStep%Worms.size()]->pointer->pos().x()+25 - 50*cos(Worms[scene->currentStep%Worms.size()]->angle)
-                    );
-        QPen pen;
-        pen.setDashPattern(QVector<qreal>(2,2));
-        ((MainWindow*)scene)->Items.Item.named.Scope->setPen(pen);
-        return true;
-    }
-    return false;
-}
-void Worm::damaged(int a) {
-    hp-=a;
-    if (hp<=0) {
-        QVector<Worm*> *Worms = &(((MainWindow*)(pointer->scene()))->Players[((MainWindow*)(pointer->scene()))->currentPlayer]->Worms);
-        Worms->erase(Worms->begin()+(((MainWindow*)(pointer->scene()))->currentStep)%Worms->size());
-        pointer->scene()->removeItem(pointer); //?!!
-    }
-}
-void MainWindow::AddItem(QGraphicsItem *item) {
-    addItem(item);
-}
-void MainWindow::SetLine(qreal x1,qreal x2,qreal x3,qreal x4) {
-    Items.Item.named.Scope->setLine(x1,x2,x3,x4);
-}
-QGraphicsItem* Weapon::detonate() {
-    MainWindow* scene = (MainWindow*)(pointer->scene());
-    if (isSpecific) {
-
-    } else {
-        //scene->launched=NULL;
-        //velocityX=0;
-        //velocityY=0;
-        QVector<Worm*> vec;
-        for (int i = 0; i<radius*2; i++)
-            for (int j = 0; j<radius*2; j++) {
-                QPointF pos(pointer->pos().x()-radius+i,pointer->pos().y()-radius+j);
-                //if (pos.y()>scene->constants.height-scene->currentLevel[((int)pos.x())%scene->constants.width ]) scene->currentLevel[((int)pos.x())%scene->constants.width]-=1;
-                if (sqrt((pointer->pos().x()-radius+i)*(pointer->pos().x()-radius+i)+(pointer->pos().y()-radius+j)*(pointer->pos().y()-radius+j))<radius) {
-                    scene->addRect(pointer->pos().x()-radius+i,pointer->pos().y()-radius+j,1,1,QPen(Qt::transparent),QBrush(scene->backgroundBrush()));
-                    for (int k = 0; k<scene->constants.playersCount; k++)
-                        for (int t = 0; t<scene->Players[k]->Worms.size(); t++) {
-                            if ((pos.x()>=scene->Players[k]->Worms[t]->pointer->pos().x())&&(pos.y()>=scene->Players[k]->Worms[t]->pointer->pos().y())
-                                &&(pos.x()<=scene->Players[k]->Worms[t]->pointer->pos().x()+50)&&(pos.y()<=scene->Players[k]->Worms[t]->pointer->pos().y()+50))
-                            {
-                                bool flag = true;
-                                for (int m = 0; m<vec.size(); m++) {
-                                    if (vec[m]==scene->Players[k]->Worms[t]) flag = false;
-                                }
-                                if (flag) vec.append(scene->Players[k]->Worms[t]);
-                            }
-                        }
-                }
-            }
-        for (int m = 0; m<vec.size(); m++) {
-            vec[m]->damaged(damage);
-        }
-        //scene->addRect();
-        return pointer;
-    }
-    return NULL;
-}

@@ -47,6 +47,8 @@ int main(int argc, char *argv[])
     log->moveToThread(c);
     a.connect(b,SIGNAL(started()),log,SLOT(Draw()));
     a.connect(log,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
+    a.connect(log,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
+    a.connect(log,SIGNAL(SetLine(qreal,qreal,qreal,qreal)),&o,SLOT(SetLine(qreal,qreal,qreal,qreal)));
     c->start();
     log->statuses.named.inInventory=true;
     //t=&o;
