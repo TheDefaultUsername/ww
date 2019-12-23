@@ -2,7 +2,7 @@
 #include <thread>
 #include <chrono>
 #include <cmath>
-
+#include <QFile>
 
 #include <QDebug>
 
@@ -17,27 +17,46 @@ void _Load::Load() {
     k.setPen(QColor(0,0,0,0)); k.setBrush(QImage(QString("inv.png")));
     this->main->addItem(&k);
     std::this_thread::sleep_for(std::chrono::seconds(15));*/
-    int WeaponAmount = 9;
+    QFile weap("src/weap.txt");
+    weap.open(QFile::ReadOnly);
+    int WeaponAmount = QString(weap.readLine()).toInt();
     int w = 0;
+    main->currentStep=WeaponAmount;
     while (WeaponAmount>>2 > w) w++;
     w++;
     w=w<<2;
+    main->currentPlayer=w;
     main->Inventory.clear();
     for (int i = 0; i<w; i++) {
-        QGraphicsPixmapItem *n = new QGraphicsPixmapItem(QPixmap(QString("src/%1.png").arg(i)).scaled(QSize(50,50),Qt::KeepAspectRatio));
+        QGraphicsPixmapItem *n = new QGraphicsPixmapItem(QPixmap(QString("src/%1.png").arg(i)).scaled(QSize(50,50)));
         n->setPos(QPointF((i%4)*50+main->constants.width-200,(i > 3 ? 50 : 0)));
         main->Inventory.push_back(n);
         emit AddItem(n);
         n->hide();
     }
-    main->Keys.Right=Qt::Key_Right;
-    main->Keys.Left=Qt::Key_Left;
-    main->Keys.Up=Qt::Key_Up;
-    main->Keys.Down=Qt::Key_Down;
-    main->Keys.Esc=Qt::Key_Escape;
-    main->Keys.Use=Qt::Key_Return;//Qt::Key_Enter; //its magic, harry
-    main->Keys.Inventory=Qt::Key_I;
-    main->Keys.Jump=Qt::Key_Space;
+    for (int i = 0; i<WeaponAmount; i++) {
+        main->inv.weapons.append(Weapon(
+                                     QString(weap.readLine()).at(0)=='t',
+                                     QString(weap.readLine()).at(0)=='t',
+                                     QString(weap.readLine()).toDouble(),
+                                     QString(weap.readLine()).toDouble(),
+                                     QString(weap.readLine()).toInt(),
+                                     QString(weap.readLine()).toInt(),
+                                     QString(weap.readLine()).toInt()
+                                     ));
+        main->inv.WeapIm.append(new QGraphicsPixmapItem(QPixmap(QString("src/%1_.png").arg(i)).scaled(QSize(50,50))));
+    }
+    weap.close();
+    QFile key(QString("src/keys.txt"));
+    key.open(QFile::ReadOnly);
+    main->Keys.Right=QString(key.readLine()).toInt();
+    main->Keys.Left=QString(key.readLine()).toInt();
+    main->Keys.Up=QString(key.readLine()).toInt();
+    main->Keys.Down=QString(key.readLine()).toInt();
+    main->Keys.Esc=QString(key.readLine()).toInt();
+    main->Keys.Use=QString(key.readLine()).toInt();
+    main->Keys.Inventory=QString(key.readLine()).toInt();
+    main->Keys.Jump=QString(key.readLine()).toInt();
     emit stopped();
 }
 
@@ -133,7 +152,11 @@ void _Logick::Draw() {
                 std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
             }
             if (main->KeysPressed.Use()&&invMove) {
-                if(menu->accept()) statuses.named.inMenu=false;
+                if(menu->accept()) {
+                    statuses.named.inMenu=false;
+                    emit startGame(menu->playeramount,(menu->isLevelSand? &(menu->level) : new QVector<int>(600,100)),menu->gravity);
+                    menu->hide();
+                }
                 invMove=false;
                 std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(250)); invMove=true;}).detach();
             }
@@ -177,10 +200,13 @@ void _Logick::Draw() {
 
             if (main->KeysPressed.Use()&&invMove) {
                 int id = main->Players[main->currentPlayer]->currentWorm;
-                qreal velX = -10*cos(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*cos(angle);
-                qreal velY = -10*sin(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*sin(angle);
-                Weapon* weap = new Weapon(false,false,velX,velY,1,5,0);// = new Weapon(wepons[id]);
-                weap->pointer=new QGraphicsPixmapItem(QPixmap(main->Inventory[id]->pixmap()));
+                qreal velX = -main->constants.gravity*cos(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*cos(angle);
+                qreal velY = -main->constants.gravity*sin(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*sin(angle);
+                Weapon* weap = new Weapon(main->inv.weapons[id]);//new Weapon(false,false,velX,velY,1,5,0);// = new Weapon(wepons[id]);
+                weap->velocityX=velX;
+                weap->velocityY=velY;
+                weap->creator=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()];
+                weap->pointer=  new QGraphicsPixmapItem(main->inv.WeapIm[id]->pixmap());
                 weap->pointer->setPos(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->pointer->pos());
                 emit AddItem(weap->pointer);
                 main->launched=weap;
@@ -202,35 +228,34 @@ void _Logick::Draw() {
             }
             if (main->KeysPressed.Right()) {
                 qreal *velX = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityX);
-                qreal *velY = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityY);
-                qreal vel=*velY * *velY + *velX * *velX;
-                if (vel<1) {
+                bool *onG = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->onGround);
+                if (*onG) {
                     int fps = main->constants.FPS;
                     *velX+=50/fps;
-                    ///todo ONGROUND
-                    //std::thread([velX,fps](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); if ((*velX>0)) *velX-=50/fps;}).detach();
+                    *onG=false;
+                    std::thread([velX,onG](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); while(!*onG) {} *velX=0;}).detach();
                 }
             }
             if (main->KeysPressed.Left()) {
                 qreal *velX = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityX);
-                qreal *velY = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityY);
-                qreal vel=*velY * *velY + *velX * *velX;
-                if (vel<1) {
+                bool *onG = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->onGround);
+                if (*onG) {
                     int fps = main->constants.FPS;
                     *velX-=50/fps;
-                    ///todo ONGROUND
-                    //std::thread([velX,fps](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); if ((*velX<0)) *velX+=50/fps;}).detach();
+                    *onG=false;
+                    std::thread([velX,onG](){std::this_thread::sleep_for(std::chrono::milliseconds(100)); while(!*onG) {} *velX=0;}).detach();
                 }
             }
             if (main->KeysPressed.Jump()) {
                 qreal *velY = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityY);
-                ///todo ONGROUND
-                auto it = main->currentLevel.begin() + (int)trunc(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->pointer->pos().x());
-                auto ite = it+50;
+                bool *onGV = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->onGroundV);
+                //auto it = main->currentLevel.begin() + (int)trunc(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->pointer->pos().x());
+                //auto ite = it+50;
 
-                int maxLevel = *(std::max_element(it,ite));
-                if (main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->pointer->pos().y()+55>main->constants.height-maxLevel) {
-                    *velY = -main->constants.gravity/2;
+                //int maxLevel = *(std::max_element(it,ite));
+                if (*onGV) {
+                    *velY = -JUMP_VELOCITY;
+                    *onGV=false;
                 }
                 //*velY = (1 > abs(*velY) ? -5 : *velY);
             }
@@ -250,7 +275,8 @@ void _Physic::Draw() {
         //gravity
         for(int i = 0; i<main->constants.playersCount; i++) {
             for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
-                main->Players[i]->Worms[j]->velocityY+=((double)main->constants.gravity)/FPS;
+                if (!main->Players[i]->Worms[j]->onGround)
+                    main->Players[i]->Worms[j]->velocityY+=((double)main->constants.gravity)/FPS;
             }
         }
         if (main->launched) {
@@ -265,25 +291,18 @@ void _Physic::Draw() {
         for(int i = 0; i<main->constants.playersCount; i++) {
             for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
                 emit MoveItem(main->Players[i]->Worms[j]->pointer,main->Players[i]->Worms[j]->velocityX,main->Players[i]->Worms[j]->velocityY);
-                /*if (main->Players[i]->Worms[j]->pointer->rect().x()>main->constants.width-50) {
-                    main->Players[i]->Worms[j]->velocityX=0;
-                    emit MoveItem(main->Players[i]->Worms[j]->pointer,600 - 50 - main->Players[i]->Worms[j]->pointer->rect().x(),0);
-                    //std::this_thread::sleep_for(std::chrono::milliseconds(200));
-                }
-                if (main->Players[i]->Worms[j]->pointer->rect().x()<0) {
-                    main->Players[i]->Worms[j]->velocityX=0;
-                    emit MoveItem(main->Players[i]->Worms[j]->pointer,0-main->Players[i]->Worms[j]->pointer->rect().x(),0);
-                }*/
-                auto it = main->currentLevel.begin() + (int)trunc(main->Players[i]->Worms[i]->pointer->pos().x());
+
+                auto it = main->currentLevel.begin() + (int)trunc(main->Players[i]->Worms[j]->pointer->pos().x());
                 auto ite = it+50;
 
                 int maxLevel = *(std::max_element(it,ite)); //,[](int a, int b){return a>b;}));
 
 
                 if (main->Players[i]->Worms[j]->pointer->pos().y()+50 > main->constants.height - maxLevel) {
+                    main->Players[i]->Worms[j]->onGround=true;
+                    main->Players[i]->Worms[j]->onGroundV=true;
                     emit MoveItem(main->Players[i]->Worms[j]->pointer,0,(main->constants.height-maxLevel)-(main->Players[i]->Worms[j]->pointer->pos().y()+50));
                     if (main->Players[i]->Worms[j]->velocityY>JUMP_VELOCITY*2) main->Players[i]->Worms[j]->damaged(trunc(main->Players[i]->Worms[j]->velocityY));
-                    //main->Players[i]->Worms[j]->velocityX=std::max((double)0,main->Players[i]->Worms[j]->velocityX-main->Players[i]->Worms[j]->velocityY);
                     if (main->Players[i]->Worms[j]->velocityY>JUMP_VELOCITY) main->Players[i]->Worms[j]->velocityX=0;
                     main->Players[i]->Worms[j]->velocityY=0;
                 }
@@ -293,21 +312,12 @@ void _Physic::Draw() {
         if (main->launched) {
             if (!main->launched->bananed) {
                 emit MoveItem(main->launched->pointer,main->launched->velocityX,main->launched->velocityY);
-                //if (main->launched->pointer->collidesWithItem(main->Players[0]->Worms[0]->pointer)) {}
-                /*if (main->launched->pointer->collidingItems().size()) {
-                QList<QGraphicsItem*> coll = main->launched->pointer->collidingItems();
-                for (int i = 0; i<coll.size(); i++) {
-                    if (coll[i]!=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->pointer) {
-                        main->launched->detonate();
-                    }
-                }
-                }*/
                 for(int i = 0; i<main->constants.playersCount; i++)
-                    for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
+                    for (int j = 0; (j<main->Players[i]->Worms.size())&&(main->launched); j++) {
                     QGraphicsItem *pointer = main->Players[i]->Worms[j]->pointer;
-                    //if (pointer!=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->pointer)
+                        if (((void*)pointer)!=main->launched->creator)
                         if (main->launched->pointer->collidesWithItem(pointer))
-                        {QGraphicsItem* pointer = main->launched->detonate(); if (pointer) {emit RemoveItem(pointer); main->launched=NULL;}}
+                        {QGraphicsItem* Wpointer = main->launched->detonate(); if (Wpointer) {emit RemoveItem(Wpointer); main->launched=NULL;}}
                 }
                 if (main->launched) {
                     auto it = main->currentLevel.begin() + (int)trunc(main->launched->pointer->pos().x());
@@ -319,18 +329,9 @@ void _Physic::Draw() {
             if (main->launched) if ((main->launched->isBanana)&&(main->launched->bananed)) {
                 for (int i = 0; i<main->launched->bananaChilds.size(); i++) {
                     emit MoveItem(main->launched->bananaChilds[i]->pointer,main->launched->bananaChilds[i]->velocityX,main->launched->bananaChilds[i]->velocityY);
-                /*if (main->launched->pointer->collidingItems().size()) {
-                    QList<QGraphicsItem*> coll = main->launched->pointer->collidingItems();
-                    for (int j = 0; j<coll.size(); j++) {
-                        if (coll[j]!=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->pointer) {
-                            main->launched->detonate();
-                        }
-                    }
-                }*/
                 for(int k = 0; k<main->constants.playersCount; k++)
                     for (int j = 0; j<main->Players[k]->Worms.size(); j++) {
                         QGraphicsItem *pointer = main->Players[k]->Worms[j]->pointer;
-                        //if (pointer!=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->pointer)
                         if (main->launched->bananaChilds[i]->pointer->collidesWithItem(pointer))
                            {QGraphicsItem* pointer = main->launched->bananaChilds[i]->detonate(); if (pointer) {emit RemoveItem(pointer); main->launched=NULL;}}
                 }
@@ -390,6 +391,18 @@ bool Menu::accept() {
         if ((playeramount>1)&&(playeramount<5)) {playeramount++;} else {playeramount=2;}
         emit SetPlainText(texts[3],QString("Players %1").arg(playeramount));
     }
+    if (current_action==1) {
+        if (isLevelSand) {
+            emit SetPlainText(texts[1],QString("Level flat"));
+        } else {
+            emit SetPlainText(texts[1],QString("Level loaded"));
+        }
+        isLevelSand=!isLevelSand;
+    }
+    if (current_action==0)
+        if ((playeramount>=2)&&(playeramount<=5))
+            if ((gravity>0)&&(gravity<=100))
+                return true;
     return false;
 }
 
@@ -412,4 +425,10 @@ Menu::Menu(MainWindow* m): main(m) {
     buttons[5]->setPos(200,0);
     main->addItem(buttons[5]);
     current_action=0;
+    QFile f(QString("src/lvl.txt"));
+    f.open(QFileDevice::ReadOnly);
+    for (int i = 0; i<600; i++) {
+        level.append(QString(f.readLine()).toInt());
+    }
+    f.close();
 }

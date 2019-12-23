@@ -5,7 +5,7 @@
 
 class Inventory{
 public:
-    Inventory();
+    Inventory() {}
     QVector<Weapon> weapons;
     QVector<QGraphicsPixmapItem*> WeapIm;
 };

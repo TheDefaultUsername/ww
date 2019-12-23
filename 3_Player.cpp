@@ -1,11 +1,10 @@
 #include "4_Scene.h"
 #include <cmath>
 
-Player::Player(int w): currentWorm(0), Inventory(20,0) {
-    for (int i = 0; i < 6; i++) {
+Player::Player(int w): currentWorm(0) {
+    for (int i = 0; i < 3; i++) {
         Worms.push_back(new Worm(w));
     }
-    Inventory[0]=1;
 }
 
 void Player::showInventory() {
@@ -75,7 +74,7 @@ bool Player::getWeapon(int a) {
                     Worms[scene->currentStep%Worms.size()]->pointer->pos().x()+25 - 50*cos(Worms[scene->currentStep%Worms.size()]->angle)
                     );
         QPen pen;
-        pen.setDashPattern(QVector<qreal>(2,2));
+        pen.setDashPattern(QVector<qreal>(2,5));
         ((MainWindow*)scene)->Item.named.Scope->setPen(pen);
         return true;
     }

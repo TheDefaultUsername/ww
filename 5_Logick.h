@@ -26,7 +26,6 @@ public:
     void show();
     void hide();
     bool accept();
-    QVector<int> gravityVariables;
     QVector<long int> resizeTemplates;
     QVector<int> level;
     bool isLevelSand;
@@ -54,6 +53,7 @@ signals:
     void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
     void SetLine(qreal,qreal,qreal,qreal);
+    void startGame(int playerAmount,QVector<int>* level, int gravity);
 public:
     union {
         bool numbered[5];

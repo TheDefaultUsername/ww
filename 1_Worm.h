@@ -13,6 +13,7 @@ public:
     QGraphicsPixmapItem* pointer;
     int hp;
     bool onGround;
+    bool onGroundV;
     void damaged(int);
 };
 

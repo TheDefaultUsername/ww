@@ -2,6 +2,8 @@
 #define WEAP_H
 
 #include "1_Worm.h"
+#include <thread>
+#include <chrono>
 
 class Weapon {
 public:
@@ -13,6 +15,7 @@ public:
     int damage;
     int radius;
     int specID;
+    void* creator;
     QVector<Weapon*> bananaChilds;
     QGraphicsPixmapItem *pointer;
     Weapon(bool iss,

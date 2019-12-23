@@ -18,7 +18,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     if (event->key()==Keys.Up) KeysPressed.sUp(true);
     if (event->key()==Keys.Down) KeysPressed.sDown(true);
     if (event->key()==Keys.Jump) KeysPressed.sJump(true);
-    if ((event->key()==Keys.Use)||(event->key()==Qt::Key_Enter)) KeysPressed.sUse(true);
+    if (event->key()==Keys.Use)/*||(event->key()==Qt::Key_Enter))*/ KeysPressed.sUse(true);
     if (event->key()==Keys.Esc) KeysPressed.sEsc(true);
 
     //qDebug()<<event->key()<<" "<<event->nativeVirtualKey()<<" "<<Keys.Use;
@@ -39,13 +39,14 @@ MainWindow::~MainWindow()
 {
 }
 
-void MainWindow::startGame(int playerAmount, int level, int gravity) {
+void MainWindow::startGame(int playerAmount,QVector<int>* level, int gravity) {
     //this->clear();
     //this->setBackgroundBrush(QColor(128,192,255,255));
     inventoryLayout=0;
     ///currentLevel=Levels[level];
     constants.playersCount=playerAmount;
-    currentLevel=QVector<int>(600,100);
+    currentLevel=*level;
+    addRect(0,300,600,100,QPen(Qt::transparent),QBrush(QColor(128,192,255,255)));
     for (int i = 0; i<currentLevel.size(); i++) {
         this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
     }
@@ -53,12 +54,20 @@ void MainWindow::startGame(int playerAmount, int level, int gravity) {
     Players.clear();
     for (int i = 0; i<playerAmount; i++) {
         Players.push_back(new Player(constants.width));
+        Players[i]->Inventory=QVector<int>(currentPlayer,1);
+        for (int k = currentStep; k<currentPlayer; k++) Players[i]->Inventory[k]=0;
         for (int j = 0; j<Players[i]->Worms.size(); j++) {
+            QPixmap pm = Players[i]->Worms[j]->pointer->pixmap();
+            QPainter pa(&pm);
+            pa.setBrush(QBrush(Qt::transparent));
+            pa.setPen(QPen(QColor(i%3 * 120, i%5 * 50, i%2 * 100, 255)));
+            pa.drawRect(0,0,49,49);
+            pa.end();
+            Players[i]->Worms[j]->pointer->setPixmap(pm);
             this->addItem(Players[i]->Worms[j]->pointer);
-            //if leveltype==sand
-            auto it = currentLevel.begin()+(int)trunc(Players[i]->Worms[i]->pointer->pos().x());
+            /*auto it = currentLevel.begin()+(int)trunc(Players[i]->Worms[i]->pointer->pos().x());
             auto ite = it + Players[i]->Worms[i]->pointer->pixmap().width();
-            MoveItem(Players[i]->Worms[j]->pointer,0,constants.height-*(std::max_element(it,ite))-Players[i]->Worms[i]->pointer->pixmap().height());
+            MoveItem(Players[i]->Worms[j]->pointer,0,constants.height-*(std::max_element(it,ite))-Players[i]->Worms[i]->pointer->pixmap().height());*/
         }
     }
     currentPlayer=0;
@@ -112,7 +121,7 @@ void MainWindow::Draw() {
     Item.named.Highlight=h;
     k->hide();
     h->hide();
-    startGame(1,0,10);
+    //startGame(1,0,10);
     //std::this_thread::sleep_for(std::chrono::seconds(5));
     //MoveItem(h,50,0);*/
 }
@@ -131,17 +140,18 @@ void MainWindow::MoveItem(QGraphicsPixmapItem* item, int mX, int mY) {
 }
 
 void MainWindow::RemoveItem(QGraphicsItem *item) {
-    this->RemoveItem(item);
+    this->removeItem(item);
     //delete(item);
 }
 
 void MainWindow::AddItem(QPixmap map, QPen pen, QBrush brush) {
-    QPainter p(&map);
+    /*QPainter p(&map);
     p.setPen(pen);
     p.setBrush(brush);
     p.drawRect(0,0,map.width(),map.height());
     p.end();
     QGraphicsPixmapItem* k = new QGraphicsPixmapItem(map);
     //k->setPen(pen); k->setBrush(brush);
-    //launched=k;
+    //launched=k;*/
+    //4to eto takoe i za4em ono tut?
 }

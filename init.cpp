@@ -44,6 +44,7 @@ int main(int argc, char *argv[])
         a.connect(logick,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
         a.connect(logick,SIGNAL(SetLine(qreal,qreal,qreal,qreal)),&o,SLOT(SetLine(qreal,qreal,qreal,qreal)));
         a.connect(menu,SIGNAL(SetPlainText(QGraphicsTextItem*,QString)),&o,SLOT(SetPlainText(QGraphicsTextItem*,QString)));
+        a.connect(logick,SIGNAL(startGame(int,QVector<int>*, int)),&o,SLOT(startGame(int,QVector<int>*, int)));
     logickThread->start();
 
     menu->show();

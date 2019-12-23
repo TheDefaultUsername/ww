@@ -14,8 +14,7 @@ public:
     ~MainWindow() override;
 
     void keyPressEvent(QKeyEvent *event) override;
-    void keyReleaseEvent(QKeyEvent *event) override;
-    void startGame(int playerAmount,int level, int gravity);
+    void keyReleaseEvent(QKeyEvent *event) override; 
     union {
         QGraphicsItem* numbered[16];
         struct {
@@ -25,6 +24,7 @@ public:
         } named;
     } Item;
 public slots:
+    void startGame(int playerAmount,QVector<int>* level, int gravity);
     void Draw();
     void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
     void AddItem(QPixmap map, QPen Pen, QBrush Brush);
@@ -49,6 +49,7 @@ public:
     QVector<Player*> Players;
     Weapon* launched;
     QVector<QGraphicsPixmapItem*> Inventory;
+    class Inventory inv;
 };
 
 #endif // SCENE_H
