@@ -3,7 +3,7 @@
 
 QGraphicsItem* Weapon::detonate() {
     //if (isDet) return NULL;
-    MainWindow* scene = (MainWindow*)(pointer->scene());
+    MainScene* scene = (MainScene*)(pointer->scene());
     if (isSpecific) {
 
     } else {
@@ -15,7 +15,9 @@ QGraphicsItem* Weapon::detonate() {
             for (int j = 0; j<radius*2; j++) {
                 QPointF pos(pointer->pos().x()+25-radius+i,pointer->pos().y()+25-radius+j);
                 if (sqrt((-radius+i)*(-radius+i)+(-radius+j)*(-radius+j))<radius) {
-                    if (pos.y()>scene->constants.height-scene->currentLevel[((int)pos.x())%scene->constants.width]) scene->currentLevel[((int)pos.x())%scene->constants.width]-=1;
+                    if (pos.x()>=0&&pos.x()<scene->constants.width)
+                    if (pos.y()>scene->currentLevel[((int)pos.x())]->pos().y()) emit MoveItem((QGraphicsPixmapItem*)scene->currentLevel[((int)pos.x())],0,1);
+                    ///EMIT!!!!!!!!
                     //scene->addRect(pos.x(),pos.y(),1,1,QPen(Qt::transparent),QBrush(QColor(128,192,255,255)));
                     for (int k = 0; k<scene->constants.playersCount; k++)
                         for (int t = 0; t<scene->Players[k]->Worms.size(); t++) {
@@ -33,6 +35,7 @@ QGraphicsItem* Weapon::detonate() {
             }
         for (int m = 0; m<vec.size(); m++) {
             vec[m]->damaged(damage);
+            ///EMIT!!!!!!!!!
         }
         //scene->addRect();
         return pointer;

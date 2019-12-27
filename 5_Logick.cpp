@@ -35,7 +35,7 @@ void _Load::Load() {
         n->hide();
     }
     for (int i = 0; i<WeaponAmount; i++) {
-        main->inv.weapons.append(Weapon(
+        main->inv.weapons.append(new Weapon(
                                      QString(weap.readLine()).at(0)=='t',
                                      QString(weap.readLine()).at(0)=='t',
                                      QString(weap.readLine()).toDouble(),
@@ -154,7 +154,7 @@ void _Logick::Draw() {
             if (main->KeysPressed.Use()&&invMove) {
                 if(menu->accept()) {
                     statuses.named.inMenu=false;
-                    emit startGame(menu->playeramount,(menu->isLevelSand? &(menu->level) : new QVector<int>(600,100)),menu->gravity);
+                    if (main->Players.empty()) emit startGame(menu->playeramount,(menu->isLevelSand? &(menu->level) : new QVector<int>(600,100)),menu->gravity);
                     menu->hide();
                 }
                 invMove=false;
@@ -200,18 +200,43 @@ void _Logick::Draw() {
 
             if (main->KeysPressed.Use()&&invMove) {
                 int id = main->Players[main->currentPlayer]->currentWorm;
-                qreal velX = -main->constants.gravity*cos(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*cos(angle);
-                qreal velY = -main->constants.gravity*sin(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*sin(angle);
-                Weapon* weap = new Weapon(main->inv.weapons[id]);//new Weapon(false,false,velX,velY,1,5,0);// = new Weapon(wepons[id]);
+                qreal startVel = (main->constants.gravity>10 ? 12 : main->constants.gravity);
+                qreal velX = -startVel*cos(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*cos(angle);
+                qreal velY = -startVel*sin(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->angle/180*3.14); //=startVel*sin(angle);
+                Weapon* weap = new Weapon(main->inv.weapons[id]->isSpecific,
+                                          main->inv.weapons[id]->isBanana,
+                                          0,
+                                          0,
+                                          main->inv.weapons[id]->damage,
+                                          main->inv.weapons[id]->radius,
+                                          main->inv.weapons[id]->specID
+                                          );//new Weapon(false,false,velX,velY,1,5,0);// = new Weapon(wepons[id]);
+                connect(weap,SIGNAL(MoveItem(QGraphicsItem*, int, int)),main,SLOT(MoveItem(QGraphicsItem*, int, int)));
                 weap->velocityX=velX;
                 weap->velocityY=velY;
-                weap->creator=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()];
+                //weap->creator=main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()];
                 weap->pointer=  new QGraphicsPixmapItem(main->inv.WeapIm[id]->pixmap());
                 weap->pointer->setPos(main->Players[main->currentPlayer]->Worms[main->currentStep%main->Players[main->currentPlayer]->Worms.size()]->pointer->pos());
                 emit AddItem(weap->pointer);
-                main->launched=weap;
+                weap->i=main->currentPlayer;
+                weap->j=main->currentStep%main->Players[main->currentPlayer]->Worms.size();
+
+
                 invMove=false;
                 std::thread([&invMove](){std::this_thread::sleep_for(std::chrono::milliseconds(1000)); invMove=true;}).detach();
+                statuses.named.shooting=false;
+                emit RemoveItem(main->Item.named.Scope);
+                //main->currentStep++;
+                //int pp = main->currentPlayer;
+                //pp++;
+                //while (main->Players[pp%main->Players.size()]->Worms.empty()) {pp++;}
+                //pp=pp%main->Players.size();
+                //if (pp==main->currentPlayer) {
+                //    emit AddItem(new QGraphicsTextItem(QString("Player %1 WON").arg(pp)));
+                //} else main->currentPlayer=pp;
+                emit NextStep();
+                //weap->moveToThread(main->Phy);
+                main->launched=weap;
             }
 
         continue;}
@@ -227,8 +252,8 @@ void _Logick::Draw() {
                 }
             }
             if (main->KeysPressed.Right()) {
-                qreal *velX = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityX);
-                bool *onG = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->onGround);
+                qreal *velX = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentPlayer]->Worms.size())]->velocityX);
+                bool *onG = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentPlayer]->Worms.size())]->onGround);
                 if (*onG) {
                     int fps = main->constants.FPS;
                     *velX+=50/fps;
@@ -237,8 +262,8 @@ void _Logick::Draw() {
                 }
             }
             if (main->KeysPressed.Left()) {
-                qreal *velX = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityX);
-                bool *onG = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->onGround);
+                qreal *velX = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentPlayer]->Worms.size())]->velocityX);
+                bool *onG = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentPlayer]->Worms.size())]->onGround);
                 if (*onG) {
                     int fps = main->constants.FPS;
                     *velX-=50/fps;
@@ -247,8 +272,8 @@ void _Logick::Draw() {
                 }
             }
             if (main->KeysPressed.Jump()) {
-                qreal *velY = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->velocityY);
-                bool *onGV = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->onGroundV);
+                qreal *velY = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentPlayer]->Worms.size())]->velocityY);
+                bool *onGV = &(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentPlayer]->Worms.size())]->onGroundV);
                 //auto it = main->currentLevel.begin() + (int)trunc(main->Players[main->currentPlayer]->Worms[(main->currentStep)%(main->Players[main->currentStep]->Worms.size())]->pointer->pos().x());
                 //auto ite = it+50;
 
@@ -275,7 +300,7 @@ void _Physic::Draw() {
         //gravity
         for(int i = 0; i<main->constants.playersCount; i++) {
             for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
-                if (!main->Players[i]->Worms[j]->onGround)
+                if (!(main->Players[i]->Worms[j]->onGround&&main->Players[i]->Worms[j]->onGroundV))
                     main->Players[i]->Worms[j]->velocityY+=((double)main->constants.gravity)/FPS;
             }
         }
@@ -291,17 +316,18 @@ void _Physic::Draw() {
         for(int i = 0; i<main->constants.playersCount; i++) {
             for (int j = 0; j<main->Players[i]->Worms.size(); j++) {
                 emit MoveItem(main->Players[i]->Worms[j]->pointer,main->Players[i]->Worms[j]->velocityX,main->Players[i]->Worms[j]->velocityY);
-
+                if (main->Players[i]->Worms[j]->pointer->pos().y()>main->constants.height-waterlevel) {main->Players[i]->Worms[j]->damaged(1000); continue;}
                 auto it = main->currentLevel.begin() + (int)trunc(main->Players[i]->Worms[j]->pointer->pos().x());
                 auto ite = it+50;
 
-                int maxLevel = *(std::max_element(it,ite)); //,[](int a, int b){return a>b;}));
+                int maxLevel = (*std::max_element(it,ite,[](QGraphicsRectItem* a, QGraphicsRectItem* b){return a->pos().y()<b->pos().y();}))->pos().y();
 
 
-                if (main->Players[i]->Worms[j]->pointer->pos().y()+50 > main->constants.height - maxLevel) {
+
+                if (main->Players[i]->Worms[j]->pointer->pos().y()+50 > maxLevel) {
                     main->Players[i]->Worms[j]->onGround=true;
                     main->Players[i]->Worms[j]->onGroundV=true;
-                    emit MoveItem(main->Players[i]->Worms[j]->pointer,0,(main->constants.height-maxLevel)-(main->Players[i]->Worms[j]->pointer->pos().y()+50));
+                    emit MoveItem(main->Players[i]->Worms[j]->pointer,0,(maxLevel)-(main->Players[i]->Worms[j]->pointer->pos().y()+50));
                     if (main->Players[i]->Worms[j]->velocityY>JUMP_VELOCITY*2) main->Players[i]->Worms[j]->damaged(trunc(main->Players[i]->Worms[j]->velocityY));
                     if (main->Players[i]->Worms[j]->velocityY>JUMP_VELOCITY) main->Players[i]->Worms[j]->velocityX=0;
                     main->Players[i]->Worms[j]->velocityY=0;
@@ -315,15 +341,15 @@ void _Physic::Draw() {
                 for(int i = 0; i<main->constants.playersCount; i++)
                     for (int j = 0; (j<main->Players[i]->Worms.size())&&(main->launched); j++) {
                     QGraphicsItem *pointer = main->Players[i]->Worms[j]->pointer;
-                        if (((void*)pointer)!=main->launched->creator)
+                        if (pointer!=main->Players[main->launched->i]->Worms[main->launched->j]->pointer)
                         if (main->launched->pointer->collidesWithItem(pointer))
                         {QGraphicsItem* Wpointer = main->launched->detonate(); if (Wpointer) {emit RemoveItem(Wpointer); main->launched=NULL;}}
                 }
                 if (main->launched) {
                     auto it = main->currentLevel.begin() + (int)trunc(main->launched->pointer->pos().x());
                     auto ite = it+50;
-                    int maxLevel = *(std::max_element(it,ite));
-                    if (main->launched->pointer->pos().y()+50>main->constants.height-maxLevel) {QGraphicsItem* pointer = main->launched->detonate(); if (pointer) {emit RemoveItem(pointer); main->launched=NULL;}}
+                    int maxLevel = (*std::max_element(it,ite,[](QGraphicsRectItem* a, QGraphicsRectItem* b){return a->pos().y()<b->pos().y();}))->pos().y();
+                    if (main->launched->pointer->pos().y()>maxLevel) {QGraphicsItem* pointer = main->launched->detonate(); if (pointer) {emit RemoveItem(pointer); main->launched=NULL;}}
                 }
             }
             if (main->launched) if ((main->launched->isBanana)&&(main->launched->bananed)) {
@@ -338,13 +364,15 @@ void _Physic::Draw() {
                 if (main->launched) {
                     auto it = main->currentLevel.begin() + (int)trunc(main->launched->bananaChilds[i]->pointer->pos().x());
                     auto ite = it+50;
-                    int maxLevel = *(std::max_element(it,ite));
+                    int maxLevel = (*std::max_element(it,ite,[](QGraphicsRectItem* a, QGraphicsRectItem* b){return a->pos().y()<b->pos().y();}))->pos().y();
                     if (main->launched->bananaChilds[i]->pointer->pos().y()+50>maxLevel) {QGraphicsItem* pointer = main->launched->bananaChilds[i]->detonate(); if (pointer) {emit RemoveItem(pointer); main->launched=NULL;}}
                 }
                 }
             }
         }
-
+        if ((int)waterlevel > main->constants.height - main->Item.named.Water->pos().y())
+            emit MoveItem(main->Item.named.Water,0,main->constants.height - waterlevel - main->Item.named.Water->pos().y());
+        waterlevel+=1.2/FPS;
         th.join();
     }
 }
@@ -399,14 +427,14 @@ bool Menu::accept() {
         }
         isLevelSand=!isLevelSand;
     }
-    if (current_action==0)
+    if (current_action==0) if (main->Players.size()) return true; else
         if ((playeramount>=2)&&(playeramount<=5))
             if ((gravity>0)&&(gravity<=100))
                 return true;
     return false;
 }
 
-Menu::Menu(MainWindow* m): main(m) {
+Menu::Menu(MainScene* m): main(m) {
     texts.append(new QGraphicsTextItem(QString("Start Game")));
     texts.append(new QGraphicsTextItem(QString("Level")));
     texts.append(new QGraphicsTextItem(QString("Gravity")));

@@ -5,7 +5,8 @@
 #include <thread>
 #include <chrono>
 
-class Weapon {
+class Weapon: public QObject {
+    Q_OBJECT
 public:
     bool isSpecific;
     qreal velocityX;
@@ -15,7 +16,7 @@ public:
     int damage;
     int radius;
     int specID;
-    void* creator;
+    int i, j;
     QVector<Weapon*> bananaChilds;
     QGraphicsPixmapItem *pointer;
     Weapon(bool iss,
@@ -33,7 +34,10 @@ public:
         radius(rad),
         specID(spid),
         pointer(NULL) {}
+    Weapon() {}
     QGraphicsItem* detonate();
+signals:
+    void MoveItem(QGraphicsItem*, int, int);
 };
 
 #endif // WEAP_H

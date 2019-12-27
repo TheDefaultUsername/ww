@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     //srand(0xFF2B00FF);
     srand(time(NULL));
     QApplication a(argc, argv);
-    MainWindow o(0,0,600,400);
+    MainScene o(0,0,600,400);
     QGraphicsView scene(&o);
     scene.show();
 	
@@ -37,14 +37,17 @@ int main(int argc, char *argv[])
     Menu* menu = new Menu(&o);
     _Logick* logick = new _Logick(&o, menu);
     QThread* logickThread = new QThread;
+    o.Log=logickThread;
     logick->moveToThread(logickThread);
         a.connect(logickThread,SIGNAL(started()),logick,SLOT(Draw()));
-        a.connect(logick,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
-        a.connect(menu,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),&o,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
+        a.connect(logick,SIGNAL(MoveItem(QGraphicsItem*, int, int)),&o,SLOT(MoveItem(QGraphicsItem*, int, int)));
+        a.connect(menu,SIGNAL(MoveItem(QGraphicsItem*, int, int)),&o,SLOT(MoveItem(QGraphicsItem*, int, int)));
         a.connect(logick,SIGNAL(AddItem(QGraphicsItem*)),&o,SLOT(AddItem(QGraphicsItem*)));
         a.connect(logick,SIGNAL(SetLine(qreal,qreal,qreal,qreal)),&o,SLOT(SetLine(qreal,qreal,qreal,qreal)));
         a.connect(menu,SIGNAL(SetPlainText(QGraphicsTextItem*,QString)),&o,SLOT(SetPlainText(QGraphicsTextItem*,QString)));
         a.connect(logick,SIGNAL(startGame(int,QVector<int>*, int)),&o,SLOT(startGame(int,QVector<int>*, int)));
+        a.connect(logick,SIGNAL(NextStep()),&o,SLOT(NextStep()));
+        a.connect(logick,SIGNAL(RemoveItem(QGraphicsItem*)),&o,SLOT(RemoveItem(QGraphicsItem*)));
     logickThread->start();
 
     menu->show();

@@ -6,8 +6,8 @@
 class _Load: public QObject {
     Q_OBJECT
 public:
-    _Load(MainWindow* m): main(m) {}
-    MainWindow* main;
+    _Load(MainScene* m): main(m) {}
+    MainScene* main;
 public slots:
     void Load();
 signals:
@@ -18,7 +18,7 @@ signals:
 class Menu: public QObject {
     Q_OBJECT
 public:
-    Menu(MainWindow* m);
+    Menu(MainScene* m);
     int current_action;
     int current_menu;
     void MoveUp();
@@ -31,29 +31,30 @@ public:
     bool isLevelSand;
     int playeramount;
     int gravity;
-    MainWindow* main;
+    MainScene* main;
     QVector<QGraphicsPixmapItem*> buttons;
     QVector<QGraphicsTextItem*> texts;
 signals:
-    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void MoveItem(QGraphicsItem* Item, int moveX, int moveY);
     void SetPlainText(QGraphicsTextItem* a,QString b);
 };
 
 class _Logick: public QObject {
     Q_OBJECT
 public:
-    MainWindow* main;
+    MainScene* main;
     Menu* menu;
-    _Logick(MainWindow* m, Menu* mm): main(m), menu(mm), statuses({false,false,false,false,false}) {}
+    _Logick(MainScene* m, Menu* mm): main(m), menu(mm), statuses({false,false,false,false,false}) {}
 public slots:
     void Draw();
 signals:
-    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void MoveItem(QGraphicsItem* Item, int moveX, int moveY);
     void AddItem(QPixmap map, QPen Pen, QBrush Brush);
     void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
     void SetLine(qreal,qreal,qreal,qreal);
     void startGame(int playerAmount,QVector<int>* level, int gravity);
+    void NextStep();
 public:
     union {
         bool numbered[5];
@@ -68,12 +69,13 @@ public:
 class _Physic: public QObject {
     Q_OBJECT
 public:
-    MainWindow* main;
-    _Physic(MainWindow* m): main(m) {}
+    MainScene* main;
+    _Physic(MainScene* m): main(m), waterlevel(0) {}
+    qreal waterlevel;
 public slots:
     void Draw();
 signals:
-    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void MoveItem(QGraphicsItem* Item, int moveX, int moveY);
     void RemoveItem(QGraphicsItem* Item);
     void AddItem(QGraphicsItem*);
 };

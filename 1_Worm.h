@@ -4,7 +4,8 @@
 #include "0_KeyPress.h"
 #include <QGraphicsItem>
 
-class Worm {
+class Worm: public QObject {
+    Q_OBJECT
 public:
     Worm(int);
     qreal angle;
@@ -15,6 +16,10 @@ public:
     bool onGround;
     bool onGroundV;
     void damaged(int);
+    int pid;
+signals:
+    void RemoveItem(QGraphicsItem*);
+    void NextStep();
 };
 
 #endif //WORM_H

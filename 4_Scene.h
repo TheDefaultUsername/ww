@@ -4,14 +4,14 @@
 #include "3_Player.h"
 #include <QGraphicsScene>
 
-class MainWindow : public QGraphicsScene
+class MainScene : public QGraphicsScene
 {
     Q_OBJECT
 
 public:
-    MainWindow(QObject *parent = nullptr) : QGraphicsScene(parent), launched(NULL) {}
-    MainWindow(qreal ax, qreal ay, qreal wid, qreal hig) : QGraphicsScene(ax,ay,wid,hig), launched(NULL), Item({0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}) {}
-    ~MainWindow() override;
+    MainScene(QObject *parent = nullptr) : QGraphicsScene(parent), launched(NULL) {}
+    MainScene(qreal ax, qreal ay, qreal wid, qreal hig) : QGraphicsScene(ax,ay,wid,hig), launched(NULL), Item({0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}) {}
+    ~MainScene() override;
 
     void keyPressEvent(QKeyEvent *event) override;
     void keyReleaseEvent(QKeyEvent *event) override; 
@@ -21,17 +21,19 @@ public:
             QGraphicsPixmapItem* Inventory;
             QGraphicsPixmapItem* Highlight;
             QGraphicsLineItem* Scope;
+            QGraphicsRectItem* Water;
         } named;
     } Item;
 public slots:
     void startGame(int playerAmount,QVector<int>* level, int gravity);
     void Draw();
-    void MoveItem(QGraphicsPixmapItem* Item, int moveX, int moveY);
+    void MoveItem(QGraphicsItem* Item, int moveX, int moveY);
     void AddItem(QPixmap map, QPen Pen, QBrush Brush);
     void AddItem(QGraphicsItem*);
     void RemoveItem(QGraphicsItem* Item);
     void SetLine(qreal,qreal,qreal,qreal);
     void SetPlainText(QGraphicsTextItem* a,QString b) {a->setPlainText(b);}
+    void NextStep();
 public:
     struct {
         int gravity;
@@ -40,16 +42,19 @@ public:
         int height;
         int FPS;
     } constants;
+    int curPlC;
     int inventoryLayout;
     int currentPlayer;
     int currentStep;
     _Keys Keys;
     _KeysPressed KeysPressed;
-    QVector<int> currentLevel;
+    QVector<QGraphicsRectItem*> currentLevel;
     QVector<Player*> Players;
     Weapon* launched;
     QVector<QGraphicsPixmapItem*> Inventory;
     class Inventory inv;
+    QThread* Log;
+    QThread* Phy;
 };
 
 #endif // SCENE_H

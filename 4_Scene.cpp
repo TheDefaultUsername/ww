@@ -4,14 +4,14 @@
 #include <QPainter>
 
 
-void MainWindow::AddItem(QGraphicsItem *item) {
+void MainScene::AddItem(QGraphicsItem *item) {
     addItem(item);
 }
-void MainWindow::SetLine(qreal x1,qreal x2,qreal x3,qreal x4) {
+void MainScene::SetLine(qreal x1,qreal x2,qreal x3,qreal x4) {
     Item.named.Scope->setLine(x1,x2,x3,x4);
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event) {
+void MainScene::keyPressEvent(QKeyEvent *event) {
     if (event->nativeVirtualKey()==Keys.Inventory) KeysPressed.sInventory(true);
     if (event->key()==Keys.Right) KeysPressed.sRight(true);
     if (event->key()==Keys.Left) KeysPressed.sLeft(true);
@@ -24,7 +24,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     //qDebug()<<event->key()<<" "<<event->nativeVirtualKey()<<" "<<Keys.Use;
 }
 
-void MainWindow::keyReleaseEvent(QKeyEvent *event) {
+void MainScene::keyReleaseEvent(QKeyEvent *event) {
     if (event->nativeVirtualKey()==Keys.Inventory) KeysPressed.sInventory(false);
     if (event->key()==Keys.Right) KeysPressed.sRight(false);
     if (event->key()==Keys.Left) KeysPressed.sLeft(false);
@@ -35,36 +35,51 @@ void MainWindow::keyReleaseEvent(QKeyEvent *event) {
     if (event->key()==Keys.Esc) KeysPressed.sEsc(false);
 }
 
-MainWindow::~MainWindow()
+MainScene::~MainScene()
 {
 }
 
-void MainWindow::startGame(int playerAmount,QVector<int>* level, int gravity) {
+void MainScene::startGame(int playerAmount,QVector<int>* level, int gravity) {
     //this->clear();
     //this->setBackgroundBrush(QColor(128,192,255,255));
     inventoryLayout=0;
     ///currentLevel=Levels[level];
     constants.playersCount=playerAmount;
-    currentLevel=*level;
+    curPlC=playerAmount;
+    //currentLevel=*level;
     addRect(0,300,600,100,QPen(Qt::transparent),QBrush(QColor(128,192,255,255)));
-    for (int i = 0; i<currentLevel.size(); i++) {
-        this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
+    for (int i = 0; i<level->size(); i++) {
+        currentLevel.append(new QGraphicsRectItem(QRect(/*i,400-level->at(i)*/0,0,1,level->at(i))));
+        currentLevel[i]->setPos(i,400-level->at(i));
+        currentLevel[i]->setPen(QPen(QColor(0,0,0,0)));
+        currentLevel[i]->setBrush(QBrush(QColor(150,75,0,255)));
+        addItem(currentLevel[i]);
     }
+    QGraphicsRectItem* water = new QGraphicsRectItem(0,/*constants.height*/0,constants.width,constants.height);
+    water->setPen(QPen(Qt::transparent));
+    water->setBrush(QBrush(Qt::blue));
+    water->setPos(0,constants.height);
+    addItem(water);
+    Item.named.Water=water;
     this->constants.gravity=gravity;
+    //MoveItem(Item.named.Water,0,-40);
     Players.clear();
     for (int i = 0; i<playerAmount; i++) {
         Players.push_back(new Player(constants.width));
-        Players[i]->Inventory=QVector<int>(currentPlayer,1);
+        Players[i]->Inventory=QVector<int>(currentPlayer,5);
         for (int k = currentStep; k<currentPlayer; k++) Players[i]->Inventory[k]=0;
         for (int j = 0; j<Players[i]->Worms.size(); j++) {
             QPixmap pm = Players[i]->Worms[j]->pointer->pixmap();
             QPainter pa(&pm);
-            pa.setBrush(QBrush(Qt::transparent));
-            pa.setPen(QPen(QColor(i%3 * 120, i%5 * 50, i%2 * 100, 255)));
-            pa.drawRect(0,0,49,49);
+            pa.setBrush(QBrush(QColor(i%3 * 120 + 15, i%5 * 50 + 55, i%2 * 100 + 155, 255)));
+            pa.setPen(QPen(Qt::transparent));
+            pa.drawRect(0,0,50,5);
             pa.end();
             Players[i]->Worms[j]->pointer->setPixmap(pm);
             this->addItem(Players[i]->Worms[j]->pointer);
+            connect(Players[i]->Worms[j],SIGNAL(NextStep()),this,SLOT(NextStep()));
+            connect(Players[i]->Worms[j],SIGNAL(RemoveItem(QGraphicsItem*)),this,SLOT(RemoveItem(QGraphicsItem*)));
+            Players[i]->Worms[j]->pid=i;
             /*auto it = currentLevel.begin()+(int)trunc(Players[i]->Worms[i]->pointer->pos().x());
             auto ite = it + Players[i]->Worms[i]->pointer->pixmap().width();
             MoveItem(Players[i]->Worms[j]->pointer,0,constants.height-*(std::max_element(it,ite))-Players[i]->Worms[i]->pointer->pixmap().height());*/
@@ -76,10 +91,11 @@ void MainWindow::startGame(int playerAmount,QVector<int>* level, int gravity) {
     _Physic* p = new _Physic(this);
     p->moveToThread(b);
     p->connect(b,SIGNAL(started()),p,SLOT(Draw()));
-    p->connect(p,SIGNAL(MoveItem(QGraphicsPixmapItem*, int, int)),this,SLOT(MoveItem(QGraphicsPixmapItem*, int, int)));
+    p->connect(p,SIGNAL(MoveItem(QGraphicsItem*, int, int)),this,SLOT(MoveItem(QGraphicsItem*, int, int)));
     p->connect(p,SIGNAL(AddItem(QGraphicsItem*)),this,SLOT(AddItem(QGraphicsItem*)));
     p->connect(p,SIGNAL(RemoveItem(QGraphicsItem*)),this,SLOT(RemoveItem(QGraphicsItem*)));
     b->start();
+    Phy=b;
 
     //MoveItem(Items.Item.named.Highlight,5.3,0);
 
@@ -88,12 +104,12 @@ void MainWindow::startGame(int playerAmount,QVector<int>* level, int gravity) {
     //this->addItem(&k);
 }
 
-void MainWindow::Draw() {
+void MainScene::Draw() {
     this->setBackgroundBrush(QColor(128,192,255,255));
-    currentLevel=QVector<int>(600,100);
-    for (int i = 0; i<currentLevel.size(); i++) {
-        this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
-    }
+    //currentLevel=QVector<int>(600,100);
+    //for (int i = 0; i<currentLevel.size(); i++) {
+    //    this->addRect(QRect(i,400-currentLevel[i],1,currentLevel[i]),QPen(QColor(0,0,0,0)),QBrush(QColor(150,75,0,255)));
+    //}
     //this->addRect(QRect(0,250,600,50),QPen(Qt::transparent),QBrush(Qt::blue));
     QPixmap pm(200,100);
     pm.fill(Qt::transparent);
@@ -126,9 +142,9 @@ void MainWindow::Draw() {
     //MoveItem(h,50,0);*/
 }
 
-void MainWindow::MoveItem(QGraphicsPixmapItem* item, int mX, int mY) {
+void MainScene::MoveItem(QGraphicsItem* item, int mX, int mY) {
     if (mX>0) {
-    item->setPos(std::min(item->pos().x()+mX,(double)(constants.width-item->pixmap().width())),
+    item->setPos(std::min(item->pos().x()+mX,(double)(constants.width-item->boundingRect().width())),
                   item->pos().y()+mY
                   );
     } else {
@@ -139,12 +155,12 @@ void MainWindow::MoveItem(QGraphicsPixmapItem* item, int mX, int mY) {
     //qDebug() << "Item new rect: " << item->rect();*/
 }
 
-void MainWindow::RemoveItem(QGraphicsItem *item) {
-    this->removeItem(item);
+void MainScene::RemoveItem(QGraphicsItem *item) {
+    removeItem(item);
     //delete(item);
 }
 
-void MainWindow::AddItem(QPixmap map, QPen pen, QBrush brush) {
+void MainScene::AddItem(QPixmap map, QPen pen, QBrush brush) {
     /*QPainter p(&map);
     p.setPen(pen);
     p.setBrush(brush);
@@ -153,5 +169,19 @@ void MainWindow::AddItem(QPixmap map, QPen pen, QBrush brush) {
     QGraphicsPixmapItem* k = new QGraphicsPixmapItem(map);
     //k->setPen(pen); k->setBrush(brush);
     //launched=k;*/
-    //4to eto takoe i za4em ono tut?
+    //4to eto takoe i za4em ono tut? poteryano vremeny: 20
+}
+
+void MainScene::NextStep() {
+    currentStep++;
+    int pp = currentPlayer;
+    pp=(pp+1%Players.size());
+    while (Players[pp%Players.size()]->Worms.empty()) {pp=(pp+1%Players.size());}
+    pp=pp%Players.size();
+    if (pp==currentPlayer||curPlC==1) {
+                    QGraphicsTextItem *WON = new QGraphicsTextItem(QString("Player %1 WON").arg(pp));
+                    WON->setFont(QFont(QFont().defaultFamily(),70));
+                    WON->setDefaultTextColor(Qt::red);
+                    addItem(WON);
+    } else currentPlayer=pp;
 }
